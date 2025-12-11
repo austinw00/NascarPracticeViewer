@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASCAR Practice Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #080810 0%, #0d0d14 50%, #080810 100%);
+            min-height: 100vh;
+            color: #c0c0c0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #1a1a24;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #39ff14, transparent);
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
+        }
+
+        .subtitle {
+            color: #666;
+            margin-top: 10px;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: linear-gradient(145deg, rgba(15, 15, 20, 0.95), rgba(10, 10, 15, 0.98));
+            border: 1px solid rgba(57, 255, 20, 0.15);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #39ff14, transparent);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            color: #39ff14;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title::before {
+            content: '▸';
+            color: #39ff14;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(57, 255, 20, 0.03);
+            border: 1px solid rgba(57, 255, 20, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(57, 255, 20, 0.3);
+            box-shadow: 0 5px 20px rgba(57, 255, 20, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .drivers-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .drivers-table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .drivers-table-container::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+
+        .drivers-table-container::-webkit-scrollbar-thumb {
+            background: #39ff14;
+            border-radius: 3px;
+        }
+
+        .drivers-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .drivers-table th {
+            text-align: left;
+            padding: 8px 6px;
+            color: #39ff14;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+            position: sticky;
+            top: 0;
+            background: #0d0d14;
+            z-index: 1;
+        }
+
+        .drivers-table td {
+            padding: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.8rem;
+        }
+
+        .driver-row {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .driver-row:hover {
+            background: rgba(57, 255, 20, 0.05);
+        }
+
+        .driver-row.selected {
+            background: rgba(57, 255, 20, 0.1);
+            border-left: 3px solid #39ff14;
+        }
+
+        .driver-row.selected td {
+            color: #fff;
+        }
+
+        .position {
+            font-weight: 700;
+            color: #888;
+            width: 30px;
+        }
+
+        .position.top3 {
+            color: #39ff14;
+        }
+
+        .driver-name {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .car-number {
+            background: #1a1a24;
+            color: #39ff14;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            flex-shrink: 0;
+        }
+
+        .manufacturer {
+            display: none;
+        }
+
+        .best-lap {
+            color: #39ff14;
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+            font-size: 0.75rem;
+        }
+
+        .speed {
+            color: #888;
+            font-family: 'Consolas', monospace;
+            font-size: 0.75rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-top: 20px;
+        }
+
+        .hover-chart-panel {
+            min-height: 450px;
+        }
+
+        .hover-instruction {
+            text-align: center;
+            color: #444;
+            padding: 100px 20px;
+            font-size: 1.1rem;
+        }
+
+        .hover-instruction span {
+            color: #39ff14;
+        }
+
+        .driver-highlight {
+            display: none;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(57, 255, 20, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(57, 255, 20, 0.2);
+        }
+
+        .driver-highlight.active {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .driver-highlight-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .driver-highlight-team {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .driver-highlight-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .highlight-stat {
+            text-align: center;
+        }
+
+        .highlight-stat-value {
+            font-size: 1.3rem;
+            color: #39ff14;
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+        }
+
+        .highlight-stat-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .session-info {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 12px;
+            background: rgba(57, 255, 20, 0.03);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+        }
+
+        .session-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .session-label {
+            color: #555;
+            font-size: 0.85rem;
+        }
+
+        .session-value {
+            color: #ccc;
+            font-weight: 500;
+        }
+
+        .data-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #39ff14;
+            font-weight: 500;
+        }
+
+        .data-dot {
+            width: 8px;
+            height: 8px;
+            background: #39ff14;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .race-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: rgba(57, 255, 20, 0.03);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+        }
+
+        .race-selector select {
+            background: #0d0d14;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            color: #ccc;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            min-width: 180px;
+            transition: all 0.2s ease;
+        }
+
+        .race-selector select:hover {
+            border-color: #39ff14;
+        }
+
+        .race-selector select:focus {
+            outline: none;
+            border-color: #39ff14;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+        }
+
+        .race-selector select option {
+            background: #0d0d14;
+            color: #ccc;
+        }
+
+        .race-selector label {
+            color: #666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .selector-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .load-btn {
+            background: linear-gradient(135deg, #39ff14, #2ecc71);
+            border: none;
+            color: #000;
+            padding: 10px 25px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .load-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(57, 255, 20, 0.3);
+        }
+
+        .load-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .current-race-info {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .current-race-info h3 {
+            color: #39ff14;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .current-race-info p {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #1a1a24;
+            border-top-color: #39ff14;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 30px;
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 68, 68, 0.2);
+        }
+
+        .click-hint {
+            font-size: 0.75rem;
+            color: #444;
+            margin-top: 5px;
+        }
+
+        .clear-btn {
+            background: transparent;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            color: #39ff14;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .clear-btn:hover {
+            background: rgba(57, 255, 20, 0.1);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #333;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NASCAR Practice Viewer</h1>
+            <p class="subtitle">Lap-by-Lap Performance Analysis</p>
+        </header>
+
+        <div class="race-selector">
+            <div class="selector-group">
+                <label for="yearSelect">Year</label>
+                <select id="yearSelect">
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                </select>
+            </div>
+            <div class="selector-group">
+                <label for="seriesSelect">Series</label>
+                <select id="seriesSelect">
+                    <option value="1">Cup Series</option>
+                    <option value="2">Xfinity Series</option>
+                    <option value="3" selected>Craftsman Truck Series</option>
+                </select>
+            </div>
+            <div class="selector-group">
+                <label for="raceSelect">Race</label>
+                <select id="raceSelect">
+                    <option value="">Select a race...</option>
+                </select>
+            </div>
+            <button class="load-btn" id="loadRaceBtn" disabled>Load Practice</button>
+        </div>
+
+        <div class="current-race-info" id="currentRaceInfo" style="display: none;">
+            <h3 id="currentRaceName">--</h3>
+            <p id="currentTrackName">--</p>
+        </div>
+
+        <div class="session-info">
+            <div class="session-item">
+                <span class="session-label">Series:</span>
+                <span class="session-value">NASCAR Craftsman Truck Series</span>
+            </div>
+            <div class="session-item">
+                <span class="session-label">Session:</span>
+                <span class="session-value">Practice</span>
+            </div>
+            <div class="session-item">
+                <span class="session-label">Data:</span>
+                <span class="data-indicator"><span class="data-dot"></span> LIVE FEED</span>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-bottom: 25px;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalLaps">--</div>
+                    <div class="stat-label">Total Laps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="fastestLap">--</div>
+                    <div class="stat-label">Fastest Lap (s)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="topSpeed">--</div>
+                    <div class="stat-label">Top Speed (mph)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeDrivers">--</div>
+                    <div class="stat-label">Active Drivers</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="panel">
+                <h2 class="panel-title">Practice Standings</h2>
+                <p class="click-hint">Click a driver to lock their stats • Click again to unlock</p>
+                <div class="drivers-table-container">
+                    <table class="drivers-table">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Driver</th>
+                                <th>Best</th>
+                                <th>Laps</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driversTableBody">
+                            <tr><td colspan="4" class="loading" style="color: #666; text-align: center; padding: 40px;">
+                                Select a race from the dropdown above to view practice data
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel hover-chart-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="panel-title">Lap Time Analysis</h2>
+                    <button class="clear-btn" id="clearBtn" style="display: none;" onclick="clearSelection()">Clear Selection</button>
+                </div>
+                <div class="driver-highlight" id="driverHighlight">
+                    <div>
+                        <div class="driver-highlight-name" id="highlightName"></div>
+                        <div class="driver-highlight-team" id="highlightTeam"></div>
+                    </div>
+                    <div class="driver-highlight-stats">
+                        <div class="highlight-stat">
+                            <div class="highlight-stat-value" id="highlightBest"></div>
+                            <div class="highlight-stat-label">Best Lap</div>
+                        </div>
+                        <div class="highlight-stat">
+                            <div class="highlight-stat-value" id="highlightAvg"></div>
+                            <div class="highlight-stat-label">Avg Lap</div>
+                        </div>
+                        <div class="highlight-stat">
+                            <div class="highlight-stat-value" id="highlightLaps"></div>
+                            <div class="highlight-stat-label">Total Laps</div>
+                        </div>
+                        <div class="highlight-stat">
+                            <div class="highlight-stat-value" id="highlightTopSpeed"></div>
+                            <div class="highlight-stat-label">Top Speed</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hover-instruction" id="hoverInstruction">
+                    Hover over a <span>driver's name</span> to see their lap-by-lap performance<br>
+                    <span style="font-size: 0.85rem; color: #333;">Click to lock the view</span>
+                </div>
+                <div class="chart-container" id="chartContainer" style="display: none;">
+                    <canvas id="lapChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            NASCAR Practice Viewer &copy; 2025 | Data from NASCAR Live Feed
+        </footer>
+    </div>
+
+    <script>
+        let DATA_URL = 'https://cf.nascar.com/cacher/live/series_3/5506/lap-times-practice.json';
+        const RACE_LIST_BASE_URL = 'https://cf.nascar.com/cacher/';
+        
+        let practiceData = [];
+        let lapChart = null;
+        let selectedDriverIndex = null;
+        let isLocked = false;
+        let raceListData = {};
+
+        const chartContainer = document.getElementById('chartContainer');
+        const hoverInstruction = document.getElementById('hoverInstruction');
+        const driverHighlight = document.getElementById('driverHighlight');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // Race selector elements
+        const yearSelect = document.getElementById('yearSelect');
+        const seriesSelect = document.getElementById('seriesSelect');
+        const raceSelect = document.getElementById('raceSelect');
+        const loadRaceBtn = document.getElementById('loadRaceBtn');
+        const currentRaceInfo = document.getElementById('currentRaceInfo');
+        const currentRaceName = document.getElementById('currentRaceName');
+        const currentTrackName = document.getElementById('currentTrackName');
+
+        // Series name mapping
+        const seriesNames = {
+            '1': 'NASCAR Cup Series',
+            '2': 'NASCAR Xfinity Series',
+            '3': 'NASCAR Craftsman Truck Series'
+        };
+
+        // Load race list for selected year
+        async function loadRaceList() {
+            const year = yearSelect.value;
+            const raceListUrl = `${RACE_LIST_BASE_URL}${year}/race_list_basic.json`;
+            
+            raceSelect.innerHTML = '<option value="">Loading races...</option>';
+            raceSelect.disabled = true;
+            loadRaceBtn.disabled = true;
+
+            try {
+                const response = await fetch(raceListUrl);
+                if (!response.ok) throw new Error('Failed to fetch race list');
+                raceListData = await response.json();
+                populateRaceDropdown();
+            } catch (error) {
+                console.error('Error loading race list:', error);
+                raceSelect.innerHTML = '<option value="">Failed to load races</option>';
+            }
+        }
+
+        // Populate race dropdown based on selected series
+        function populateRaceDropdown() {
+            const seriesId = seriesSelect.value;
+            const seriesKey = `series_${seriesId}`;
+            const races = raceListData[seriesKey] || [];
+
+            raceSelect.innerHTML = '<option value="">Select a race...</option>';
+
+            races.forEach(race => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify({
+                    race_id: race.race_id,
+                    series_id: race.series_id,
+                    race_season: race.race_season,
+                    race_name: race.race_name,
+                    track_name: race.track_name
+                });
+                
+                // Format the date
+                const raceDate = new Date(race.date_scheduled);
+                const dateStr = raceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                option.textContent = `${dateStr} - ${race.race_name} (${race.track_name})`;
+                raceSelect.appendChild(option);
+            });
+
+            raceSelect.disabled = false;
+        }
+
+        // Handle race selection
+        function onRaceSelected() {
+            loadRaceBtn.disabled = !raceSelect.value;
+        }
+
+        // Load practice data for selected race
+        async function loadSelectedRace() {
+            if (!raceSelect.value) return;
+
+            const raceInfo = JSON.parse(raceSelect.value);
+            const { race_id, series_id, race_season, race_name, track_name } = raceInfo;
+
+            // Build the practice data URL
+            DATA_URL = `https://cf.nascar.com/cacher/live/series_${series_id}/${race_id}/lap-times-practice.json`;
+
+            // Update current race info display
+            currentRaceName.textContent = race_name;
+            currentTrackName.textContent = `${track_name} • ${race_season}`;
+            currentRaceInfo.style.display = 'block';
+
+            // Update session info
+            const seriesName = seriesNames[series_id.toString()] || 'NASCAR Series';
+            document.querySelector('.session-info .session-value').textContent = seriesName;
+
+            // Reset state
+            clearSelection();
+            
+            // Load the data
+            await loadData();
+        }
+
+        // Event listeners for race selector
+        yearSelect.addEventListener('change', loadRaceList);
+        seriesSelect.addEventListener('change', populateRaceDropdown);
+        raceSelect.addEventListener('change', onRaceSelected);
+        loadRaceBtn.addEventListener('click', loadSelectedRace);
+
+        // Fetch and process NASCAR data
+        async function loadData() {
+            // Show loading state
+            document.getElementById('driversTableBody').innerHTML = `
+                <tr><td colspan="4" class="loading">
+                    <div class="loading-spinner"></div>
+                    Loading practice data...
+                </td></tr>
+            `;
+            
+            // Reset stats
+            document.getElementById('totalLaps').textContent = '--';
+            document.getElementById('fastestLap').textContent = '--';
+            document.getElementById('topSpeed').textContent = '--';
+            document.getElementById('activeDrivers').textContent = '--';
+            
+            try {
+                const response = await fetch(DATA_URL);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                const data = await response.json();
+                processData(data);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('driversTableBody').innerHTML = `
+                    <tr><td colspan="4" class="error-message">
+                        No practice data available for this race.<br>
+                        <span style="font-size: 0.8rem; color: #888;">Practice data may not be available yet or the session hasn't started.</span>
+                    </td></tr>
+                `;
+            }
+        }
+
+        function processData(data) {
+            practiceData = data.laps.map(driver => {
+                // Filter out invalid lap times (pit stops, cautions, etc.)
+                const validLaps = driver.Laps.filter(lap => 
+                    lap.LapTime && lap.LapTime < 30 && lap.LapTime > 15
+                );
+                
+                const lapTimes = validLaps.map(lap => lap.LapTime);
+                const lapSpeeds = validLaps.map(lap => parseFloat(lap.LapSpeed));
+                
+                const bestLap = lapTimes.length > 0 ? Math.min(...lapTimes) : null;
+                const avgLap = lapTimes.length > 0 ? lapTimes.reduce((a, b) => a + b, 0) / lapTimes.length : null;
+                const topSpeed = lapSpeeds.length > 0 ? Math.max(...lapSpeeds) : null;
+
+                return {
+                    name: driver.FullName.replace(/\s*\(P\)\s*|\s*#\s*|\s*\(i\)\s*/g, '').trim(),
+                    number: driver.Number,
+                    manufacturer: driver.Manufacturer,
+                    runningPos: driver.RunningPos,
+                    lapTimes,
+                    lapSpeeds: validLaps.map(lap => parseFloat(lap.LapSpeed)),
+                    lapNumbers: validLaps.map(lap => lap.Lap),
+                    bestLap: bestLap ? bestLap.toFixed(3) : '--',
+                    avgLap: avgLap ? avgLap.toFixed(3) : '--',
+                    topSpeed: topSpeed ? topSpeed.toFixed(1) : '--',
+                    totalLaps: driver.Laps.filter(lap => lap.LapTime).length
+                };
+            });
+
+            // Sort by running position
+            practiceData.sort((a, b) => a.runningPos - b.runningPos);
+
+            updateStats();
+            renderTable();
+        }
+
+        function updateStats() {
+            const allLapTimes = practiceData.flatMap(d => d.lapTimes);
+            const allSpeeds = practiceData.flatMap(d => d.lapSpeeds);
+            const totalLaps = practiceData.reduce((sum, d) => sum + d.totalLaps, 0);
+
+            document.getElementById('totalLaps').textContent = totalLaps;
+            document.getElementById('fastestLap').textContent = allLapTimes.length > 0 ? 
+                Math.min(...allLapTimes).toFixed(3) : '--';
+            document.getElementById('topSpeed').textContent = allSpeeds.length > 0 ? 
+                Math.max(...allSpeeds).toFixed(1) : '--';
+            document.getElementById('activeDrivers').textContent = practiceData.length;
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById('driversTableBody');
+            tableBody.innerHTML = '';
+
+            practiceData.forEach((driver, index) => {
+                const row = document.createElement('tr');
+                row.className = 'driver-row';
+                row.dataset.driverIndex = index;
+
+                const posClass = index < 3 ? 'position top3' : 'position';
+
+                row.innerHTML = `
+                    <td class="${posClass}">${index + 1}</td>
+                    <td class="driver-name">
+                        <span class="car-number">${driver.number}</span>
+                        ${driver.name}
+                    </td>
+                    <td class="best-lap">${driver.bestLap}</td>
+                    <td>${driver.totalLaps}</td>
+                `;
+
+                row.addEventListener('mouseenter', () => {
+                    if (!isLocked) showDriverChart(index);
+                });
+                
+                row.addEventListener('mouseleave', () => {
+                    if (!isLocked) hideDriverChart();
+                });
+
+                row.addEventListener('click', () => {
+                    if (isLocked && selectedDriverIndex === index) {
+                        // Unlock if clicking same driver
+                        isLocked = false;
+                        selectedDriverIndex = null;
+                        clearBtn.style.display = 'none';
+                        document.querySelectorAll('.driver-row').forEach(r => r.classList.remove('selected'));
+                        hideDriverChart();
+                    } else {
+                        // Lock to this driver
+                        isLocked = true;
+                        selectedDriverIndex = index;
+                        clearBtn.style.display = 'block';
+                        document.querySelectorAll('.driver-row').forEach(r => r.classList.remove('selected'));
+                        row.classList.add('selected');
+                        showDriverChart(index);
+                    }
+                });
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        function clearSelection() {
+            isLocked = false;
+            selectedDriverIndex = null;
+            clearBtn.style.display = 'none';
+            document.querySelectorAll('.driver-row').forEach(r => r.classList.remove('selected'));
+            hideDriverChart();
+        }
+
+        function showDriverChart(driverIndex) {
+            const driver = practiceData[driverIndex];
+
+            if (driver.lapTimes.length === 0) {
+                return;
+            }
+
+            // Update highlight info
+            document.getElementById('highlightName').textContent = `#${driver.number} ${driver.name}`;
+            document.getElementById('highlightTeam').textContent = driver.manufacturer;
+            document.getElementById('highlightBest').textContent = `${driver.bestLap}s`;
+            document.getElementById('highlightAvg').textContent = `${driver.avgLap}s`;
+            document.getElementById('highlightLaps').textContent = driver.totalLaps;
+            document.getElementById('highlightTopSpeed').textContent = `${driver.topSpeed} mph`;
+
+            driverHighlight.classList.add('active');
+            hoverInstruction.style.display = 'none';
+            chartContainer.style.display = 'block';
+
+            const ctx = document.getElementById('lapChart').getContext('2d');
+
+            if (lapChart) {
+                lapChart.destroy();
+            }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(57, 255, 20, 0.2)');
+            gradient.addColorStop(1, 'rgba(57, 255, 20, 0.0)');
+
+            const labels = driver.lapNumbers.map(n => `Lap ${n}`);
+            const bestLapValue = parseFloat(driver.bestLap);
+            const avgLapValue = parseFloat(driver.avgLap);
+
+            lapChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Lap Time (seconds)',
+                        data: driver.lapTimes,
+                        borderColor: '#39ff14',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: driver.lapTimes.map(t => 
+                            t === bestLapValue ? '#39ff14' : 
+                            t > avgLapValue + 0.3 ? '#ff4444' : '#666'
+                        ),
+                        pointBorderColor: driver.lapTimes.map(t => 
+                            t === bestLapValue ? '#39ff14' : 'transparent'
+                        ),
+                        pointBorderWidth: 2,
+                        pointRadius: driver.lapTimes.map(t => t === bestLapValue ? 6 : 3),
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(10, 10, 15, 0.95)',
+                            titleColor: '#39ff14',
+                            bodyColor: '#ccc',
+                            borderColor: '#39ff14',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    const lapTime = context.raw;
+                                    const speed = driver.lapSpeeds[context.dataIndex];
+                                    const diff = (lapTime - bestLapValue).toFixed(3);
+                                    const diffStr = diff > 0 ? `+${diff}` : diff;
+                                    return [
+                                        `Time: ${lapTime.toFixed(3)}s (${diffStr}s)`,
+                                        `Speed: ${speed.toFixed(1)} mph`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.03)'
+                            },
+                            ticks: {
+                                color: '#555',
+                                maxRotation: 45
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.03)'
+                            },
+                            ticks: {
+                                color: '#555',
+                                callback: function(value) {
+                                    return value.toFixed(2) + 's';
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function hideDriverChart() {
+            driverHighlight.classList.remove('active');
+            hoverInstruction.style.display = 'block';
+            chartContainer.style.display = 'none';
+
+            if (lapChart) {
+                lapChart.destroy();
+                lapChart = null;
+            }
+        }
+
+        // Load data on page load
+        loadRaceList(); // Load initial race list for selected year
+    </script>
+</body>
+</html>
