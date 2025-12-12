@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASCAR Weekend Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="shared-styles.css">
+    <style>
+        /* Weekend Viewer Specific Styles */
+        .weekend-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(57, 255, 20, 0.03);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+        }
+
+        .race-title-section h2 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .race-title-section p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .race-meta {
+            display: flex;
+            gap: 30px;
+        }
+
+        .race-meta-item {
+            text-align: center;
+        }
+
+        .race-meta-value {
+            color: #39ff14;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .race-meta-label {
+            color: #666;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Schedule Panel */
+        .schedule-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .schedule-item:hover {
+            background: rgba(57, 255, 20, 0.05);
+        }
+
+        .schedule-item.completed {
+            border-left-color: #39ff14;
+            opacity: 0.7;
+        }
+
+        .schedule-item.active {
+            border-left-color: #ffcc00;
+            background: rgba(255, 204, 0, 0.05);
+        }
+
+        .schedule-item.upcoming {
+            border-left-color: #444;
+        }
+
+        .schedule-time {
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .schedule-time .day {
+            color: #888;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .schedule-time .time {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .schedule-details {
+            flex: 1;
+        }
+
+        .schedule-details .event-name {
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .schedule-details .event-info {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .schedule-status {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-complete {
+            background: rgba(57, 255, 20, 0.2);
+            color: #39ff14;
+        }
+
+        .status-live {
+            background: rgba(255, 204, 0, 0.2);
+            color: #ffcc00;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-upcoming {
+            background: rgba(136, 136, 136, 0.2);
+            color: #888;
+        }
+
+        /* Results Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table th {
+            text-align: left;
+            padding: 10px 8px;
+            color: #39ff14;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid rgba(57, 255, 20, 0.3);
+            background: #0d0d14;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .results-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.85rem;
+        }
+
+        .results-table tr:hover {
+            background: rgba(57, 255, 20, 0.03);
+        }
+
+        .pos-change {
+            font-size: 0.75rem;
+            margin-left: 5px;
+        }
+
+        .pos-up {
+            color: #39ff14;
+        }
+
+        .pos-down {
+            color: #ff4444;
+        }
+
+        .pos-same {
+            color: #666;
+        }
+
+        /* Entry List */
+        .entry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .entry-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.2s ease;
+        }
+
+        .entry-card:hover {
+            border-color: rgba(57, 255, 20, 0.2);
+            background: rgba(57, 255, 20, 0.03);
+        }
+
+        .entry-number {
+            background: #1a1a24;
+            color: #39ff14;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .entry-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .entry-driver {
+            color: #fff;
+            font-weight: 500;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .entry-team {
+            color: #666;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .entry-manufacturer {
+            font-size: 0.7rem;
+            color: #888;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        /* Track Info */
+        .track-info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .track-stat {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .track-stat-value {
+            color: #39ff14;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .track-stat-label {
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        /* Stage Points */
+        .stage-results {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .stage-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .stage-title {
+            color: #39ff14;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+        }
+
+        .stage-leader {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stage-leader .car-number {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+        }
+
+        .stage-leader-name {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .stage-points-list {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* Caution Summary */
+        .caution-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .caution-item {
+            display: flex;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .caution-laps {
+            min-width: 80px;
+            color: #ffcc00;
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+        }
+
+        .caution-reason {
+            color: #ccc;
+            flex: 1;
+        }
+
+        .caution-comment {
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 3px;
+        }
+
+        .caution-beneficiary {
+            color: #39ff14;
+            font-size: 0.85rem;
+            margin-top: 3px;
+        }
+
+        /* Lead Changes */
+        .lead-chart-container {
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .lead-summary {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .lead-stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .lead-stat-value {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .lead-stat-label {
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        /* Loop Stats */
+        .loop-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .loop-stats-table th {
+            text-align: center;
+            padding: 8px 4px;
+            color: #39ff14;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+            background: #0d0d14;
+            position: sticky;
+            top: 0;
+        }
+
+        .loop-stats-table th:first-child,
+        .loop-stats-table th:nth-child(2) {
+            text-align: left;
+        }
+
+        .loop-stats-table td {
+            padding: 8px 4px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .loop-stats-table td:first-child,
+        .loop-stats-table td:nth-child(2) {
+            text-align: left;
+        }
+
+        .loop-stats-table tr:hover {
+            background: rgba(57, 255, 20, 0.03);
+        }
+
+        /* Pit Stops */
+        .pit-stop-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .fastest-pit {
+            background: rgba(57, 255, 20, 0.05);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NASCAR Weekend Viewer</h1>
+            <p class="subtitle">Complete Race Weekend Analysis</p>
+            <div class="nav-links">
+                <a href="index.html">Practice Viewer</a>
+                <a href="weekend.html" class="active">Weekend Viewer</a>
+                <a href="loopstats.html">Loop Stats</a>
+                <a href="pitdata.html">Pit Data</a>
+            </div>
+        </header>
+
+        <div class="race-selector">
+            <div class="selector-group">
+                <label for="yearSelect">Year</label>
+                <select id="yearSelect">
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                </select>
+            </div>
+            <div class="selector-group">
+                <label for="seriesSelect">Series</label>
+                <select id="seriesSelect">
+                    <option value="1">Cup Series</option>
+                    <option value="2">Xfinity Series</option>
+                    <option value="3">Craftsman Truck Series</option>
+                </select>
+            </div>
+            <div class="selector-group">
+                <label for="raceSelect">Race</label>
+                <select id="raceSelect">
+                    <option value="">Select a race...</option>
+                </select>
+            </div>
+            <button class="load-btn" id="loadRaceBtn" disabled>Load Weekend</button>
+        </div>
+
+        <div id="weekendContent" style="display: none;">
+            <!-- Weekend Header -->
+            <div class="weekend-header" id="weekendHeader">
+                <div class="race-title-section">
+                    <h2 id="raceName">--</h2>
+                    <p id="trackInfo">--</p>
+                </div>
+                <div class="race-meta">
+                    <div class="race-meta-item">
+                        <div class="race-meta-value" id="scheduledLaps">--</div>
+                        <div class="race-meta-label">Scheduled Laps</div>
+                    </div>
+                    <div class="race-meta-item">
+                        <div class="race-meta-value" id="scheduledDistance">--</div>
+                        <div class="race-meta-label">Distance (mi)</div>
+                    </div>
+                    <div class="race-meta-item">
+                        <div class="race-meta-value" id="numberOfCars">--</div>
+                        <div class="race-meta-label">Entries</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Tabs -->
+            <div class="view-tabs">
+                <button class="view-tab active" data-view="schedule">Schedule</button>
+                <button class="view-tab" data-view="entries">Entry List</button>
+                <button class="view-tab" data-view="results">Results</button>
+                <button class="view-tab" data-view="stats">Race Stats</button>
+            </div>
+
+            <!-- Schedule View -->
+            <div class="view-content active" id="schedule-view">
+                <div class="dashboard" style="grid-template-columns: 1fr 1fr;">
+                    <div class="panel">
+                        <h2 class="panel-title">Weekend Schedule</h2>
+                        <div class="schedule-container" id="scheduleContainer">
+                            <p style="color: #666; text-align: center; padding: 40px;">Loading schedule...</p>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <h2 class="panel-title">Track Information</h2>
+                        <div id="trackDetails">
+                            <div class="track-info-grid" style="margin-bottom: 20px;">
+                                <div class="track-stat">
+                                    <div class="track-stat-value" id="trackLength">--</div>
+                                    <div class="track-stat-label">Track Length (mi)</div>
+                                </div>
+                                <div class="track-stat">
+                                    <div class="track-stat-value" id="trackShape">--</div>
+                                    <div class="track-stat-label">Track Type</div>
+                                </div>
+                                <div class="track-stat">
+                                    <div class="track-stat-value" id="trackSurface">--</div>
+                                    <div class="track-stat-label">Surface</div>
+                                </div>
+                            </div>
+                            <div id="weatherInfo" style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+                                <h3 style="color: #39ff14; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 10px;">Race Day Weather</h3>
+                                <div id="weatherDetails" style="color: #ccc;">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entry List View -->
+            <div class="view-content" id="entries-view">
+                <div class="panel">
+                    <h2 class="panel-title">Entry List</h2>
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="entrySearch" placeholder="Search drivers..." style="
+                            background: #0d0d14;
+                            border: 1px solid rgba(57, 255, 20, 0.3);
+                            color: #ccc;
+                            padding: 10px 15px;
+                            border-radius: 6px;
+                            width: 300px;
+                            font-size: 0.9rem;
+                        ">
+                    </div>
+                    <div class="entry-grid" id="entryGrid">
+                        <p style="color: #666; text-align: center; padding: 40px; grid-column: 1/-1;">Loading entries...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results View -->
+            <div class="view-content" id="results-view">
+                <div class="panel" style="margin-bottom: 25px;">
+                    <div class="stats-grid" id="raceStatsGrid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="winnerNumber">--</div>
+                            <div class="stat-label">Winner</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="leadChanges">--</div>
+                            <div class="stat-label">Lead Changes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="numLeaders">--</div>
+                            <div class="stat-label">Leaders</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="numCautions">--</div>
+                            <div class="stat-label">Cautions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard" style="grid-template-columns: 1fr 400px;">
+                    <div class="panel">
+                        <h2 class="panel-title">Race Results</h2>
+                        <div class="drivers-table-container" style="max-height: 700px;">
+                            <table class="results-table" id="resultsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Fin</th>
+                                        <th>St</th>
+                                        <th>Driver</th>
+                                        <th>Car</th>
+                                        <th>Laps</th>
+                                        <th>Led</th>
+                                        <th>Status</th>
+                                        <th>Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsBody">
+                                    <tr><td colspan="8" style="color: #666; text-align: center; padding: 40px;">
+                                        Loading results...
+                                    </td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <h2 class="panel-title">Stage Results</h2>
+                        <div class="stage-results" id="stageResults">
+                            <p style="color: #666; text-align: center; padding: 40px; grid-column: 1/-1;">Loading stages...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Race Stats View -->
+            <div class="view-content" id="stats-view">
+                <div class="dashboard" style="grid-template-columns: 1fr 1fr;">
+                    <div class="panel">
+                        <h2 class="panel-title">Caution Summary</h2>
+                        <div class="caution-list" id="cautionList">
+                            <p style="color: #666; text-align: center; padding: 40px;">Loading cautions...</p>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <h2 class="panel-title">Lead Summary</h2>
+                        <div id="leadSummary">
+                            <div class="lead-summary">
+                                <div class="lead-stat">
+                                    <div class="lead-stat-value" id="totalLeadChanges">--</div>
+                                    <div class="lead-stat-label">Lead Changes</div>
+                                </div>
+                                <div class="lead-stat">
+                                    <div class="lead-stat-value" id="totalLeaders">--</div>
+                                    <div class="lead-stat-label">Different Leaders</div>
+                                </div>
+                                <div class="lead-stat">
+                                    <div class="lead-stat-value" id="mostLapsLed">--</div>
+                                    <div class="lead-stat-label">Most Laps Led</div>
+                                </div>
+                            </div>
+                            <div class="drivers-table-container" style="max-height: 350px; margin-top: 20px;">
+                                <table class="drivers-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Driver</th>
+                                            <th>Laps Led</th>
+                                            <th>Times Led</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="leadersBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel" style="margin-top: 25px;">
+                    <h2 class="panel-title">Infractions & Penalties</h2>
+                    <div id="infractionsContainer">
+                        <p style="color: #666; text-align: center; padding: 30px;">No infractions recorded</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingState" style="display: none;">
+            <div class="panel" style="text-align: center; padding: 60px;">
+                <div class="loading-spinner"></div>
+                <p style="color: #666;">Loading weekend data...</p>
+            </div>
+        </div>
+
+        <div id="initialState">
+            <div class="panel" style="text-align: center; padding: 60px;">
+                <p style="color: #666; font-size: 1.1rem;">Select a race from the dropdown above to view weekend data</p>
+            </div>
+        </div>
+
+        <footer>
+            NASCAR Weekend Viewer &copy; 2025 | Data from NASCAR Live Feed
+        </footer>
+    </div>
+
+    <script>
+        const RACE_LIST_BASE_URL = 'https://cf.nascar.com/cacher/';
+        let weekendData = null;
+        let raceListData = {};
+
+        // DOM Elements
+        const yearSelect = document.getElementById('yearSelect');
+        const seriesSelect = document.getElementById('seriesSelect');
+        const raceSelect = document.getElementById('raceSelect');
+        const loadRaceBtn = document.getElementById('loadRaceBtn');
+        const weekendContent = document.getElementById('weekendContent');
+        const loadingState = document.getElementById('loadingState');
+        const initialState = document.getElementById('initialState');
+
+        // Series name mapping
+        const seriesNames = {
+            '1': 'NASCAR Cup Series',
+            '2': 'NASCAR Xfinity Series',
+            '3': 'NASCAR Craftsman Truck Series'
+        };
+
+        // Load race list for selected year
+        async function loadRaceList() {
+            const year = yearSelect.value;
+            const raceListUrl = `${RACE_LIST_BASE_URL}${year}/race_list_basic.json`;
+            
+            raceSelect.innerHTML = '<option value="">Loading races...</option>';
+            raceSelect.disabled = true;
+            loadRaceBtn.disabled = true;
+
+            try {
+                const response = await fetch(raceListUrl);
+                if (!response.ok) throw new Error('Failed to fetch race list');
+                raceListData = await response.json();
+                populateRaceDropdown();
+            } catch (error) {
+                console.error('Error loading race list:', error);
+                raceSelect.innerHTML = '<option value="">Failed to load races</option>';
+            }
+        }
+
+        // Populate race dropdown based on selected series
+        function populateRaceDropdown() {
+            const seriesId = seriesSelect.value;
+            const seriesKey = `series_${seriesId}`;
+            const races = raceListData[seriesKey] || [];
+
+            raceSelect.innerHTML = '<option value="">Select a race...</option>';
+
+            races.forEach(race => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify({
+                    race_id: race.race_id,
+                    series_id: race.series_id,
+                    race_season: race.race_season,
+                    race_name: race.race_name,
+                    track_name: race.track_name
+                });
+                
+                const raceDate = new Date(race.date_scheduled);
+                const dateStr = raceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                option.textContent = `${dateStr} - ${race.race_name} (${race.track_name})`;
+                raceSelect.appendChild(option);
+            });
+
+            raceSelect.disabled = false;
+        }
+
+        function onRaceSelected() {
+            loadRaceBtn.disabled = !raceSelect.value;
+        }
+
+        async function loadWeekendData() {
+            if (!raceSelect.value) return;
+
+            const raceInfo = JSON.parse(raceSelect.value);
+            const { race_id, series_id, race_season } = raceInfo;
+
+            const weekendUrl = `https://cf.nascar.com/cacher/${race_season}/${series_id}/${race_id}/weekend-feed.json`;
+
+            initialState.style.display = 'none';
+            loadingState.style.display = 'block';
+            weekendContent.style.display = 'none';
+
+            try {
+                const response = await fetch(weekendUrl);
+                if (!response.ok) throw new Error('Failed to fetch weekend data');
+                weekendData = await response.json();
+                
+                loadingState.style.display = 'none';
+                weekendContent.style.display = 'block';
+                
+                renderWeekendData();
+            } catch (error) {
+                console.error('Error loading weekend data:', error);
+                loadingState.style.display = 'none';
+                initialState.style.display = 'block';
+                initialState.innerHTML = `
+                    <div class="panel error-message">
+                        <p>Failed to load weekend data for this race.</p>
+                        <p style="font-size: 0.85rem; margin-top: 10px; color: #888;">
+                            The data may not be available yet or the race hasn't occurred.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderWeekendData() {
+            if (!weekendData) return;
+
+            // The API returns data in weekend_race array - extract the first race
+            let raceData = weekendData;
+            if (weekendData.weekend_race && weekendData.weekend_race.length > 0) {
+                raceData = weekendData.weekend_race[0];
+            }
+            
+            // Store the extracted data for other functions to use
+            weekendData = raceData;
+
+            // Header Info
+            document.getElementById('raceName').textContent = raceData.race_name || '--';
+            document.getElementById('trackInfo').textContent = `${raceData.track_name || '--'} • ${raceData.race_season || '--'}`;
+            document.getElementById('scheduledLaps').textContent = raceData.scheduled_laps || '--';
+            document.getElementById('scheduledDistance').textContent = raceData.scheduled_distance ? Math.round(raceData.scheduled_distance) : '--';
+            document.getElementById('numberOfCars').textContent = raceData.number_of_cars_in_field || (raceData.results ? raceData.results.length : '--');
+
+            // Track Info
+            document.getElementById('trackLength').textContent = raceData.track_length ? raceData.track_length.toFixed(3) : '--';
+            document.getElementById('trackShape').textContent = raceData.track_type || '--';
+            document.getElementById('trackSurface').textContent = raceData.surface || 'Asphalt';
+
+            renderSchedule();
+            renderEntryList();
+            renderResults();
+            renderRaceStats();
+        }
+
+        function renderSchedule() {
+            const container = document.getElementById('scheduleContainer');
+            const schedule = weekendData.schedule || weekendData.weekend_schedule || [];
+
+            if (schedule.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 40px;">No schedule data available</p>';
+                return;
+            }
+
+            const now = new Date();
+
+            container.innerHTML = schedule.map(event => {
+                const eventDate = new Date(event.start_time_utc || event.event_date || event.start_time);
+                const day = eventDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const time = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                
+                let statusClass = 'upcoming';
+                let statusText = 'Upcoming';
+                
+                // Determine status based on date
+                if (eventDate < now) {
+                    statusClass = 'completed';
+                    statusText = 'Complete';
+                } else if (event.status === 'In Progress' || event.live) {
+                    statusClass = 'active';
+                    statusText = 'Live';
+                }
+
+                return `
+                    <div class="schedule-item ${statusClass}">
+                        <div class="schedule-time">
+                            <div class="day">${day}</div>
+                            <div class="time">${time}</div>
+                        </div>
+                        <div class="schedule-details">
+                            <div class="event-name">${event.event_name || event.name || 'Event'}</div>
+                            <div class="event-info">${event.notes || ''}</div>
+                        </div>
+                        <span class="schedule-status status-${statusClass.replace('completed', 'complete')}">${statusText}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderEntryList() {
+            const container = document.getElementById('entryGrid');
+            const entries = weekendData.results || weekendData.entries || [];
+
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 40px; grid-column: 1/-1;">No entry data available</p>';
+                return;
+            }
+
+            // Sort by car number
+            const sortedEntries = [...entries].sort((a, b) => {
+                const numA = parseInt(a.car_number || a.Number || 0);
+                const numB = parseInt(b.car_number || b.Number || 0);
+                return numA - numB;
+            });
+
+            container.innerHTML = sortedEntries.map(entry => `
+                <div class="entry-card" data-driver="${(entry.driver_fullname || entry.driver_name || entry.FullName || '').toLowerCase()}">
+                    <div class="entry-number">${entry.car_number || entry.Number || '--'}</div>
+                    <div class="entry-info">
+                        <div class="entry-driver">${entry.driver_fullname || entry.driver_name || entry.FullName || '--'}</div>
+                        <div class="entry-team">${entry.team_name || entry.sponsor || entry.Sponsor || '--'}</div>
+                    </div>
+                    <span class="entry-manufacturer">${entry.car_make || entry.manufacturer || entry.Manufacturer || '--'}</span>
+                </div>
+            `).join('');
+
+            // Search functionality
+            document.getElementById('entrySearch').addEventListener('input', (e) => {
+                const search = e.target.value.toLowerCase();
+                document.querySelectorAll('.entry-card').forEach(card => {
+                    const driver = card.dataset.driver;
+                    card.style.display = driver.includes(search) ? 'flex' : 'none';
+                });
+            });
+        }
+
+        function renderResults() {
+            const tbody = document.getElementById('resultsBody');
+            const results = weekendData.results || [];
+
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="color: #666; text-align: center; padding: 40px;">No results available</td></tr>';
+                return;
+            }
+
+            // Update stats
+            const winner = results.find(r => (r.finishing_position || r.Position) === 1);
+            if (winner) {
+                document.getElementById('winnerNumber').textContent = `#${winner.car_number || winner.Number}`;
+            }
+            document.getElementById('leadChanges').textContent = weekendData.number_of_lead_changes || weekendData.lead_changes || '--';
+            document.getElementById('numLeaders').textContent = weekendData.number_of_leaders || weekendData.leaders || '--';
+            document.getElementById('numCautions').textContent = weekendData.number_of_cautions || weekendData.cautions || '--';
+
+            // Sort by finishing position
+            const sortedResults = [...results].sort((a, b) => {
+                const posA = a.finishing_position || a.Position || 999;
+                const posB = b.finishing_position || b.Position || 999;
+                return posA - posB;
+            });
+
+            tbody.innerHTML = sortedResults.map(result => {
+                const finPos = result.finishing_position || result.Position || '--';
+                const startPos = result.starting_position || result.StartPos || '--';
+                const diff = startPos !== '--' && finPos !== '--' ? startPos - finPos : 0;
+                
+                let changeClass = 'pos-same';
+                let changeText = '-';
+                if (diff > 0) {
+                    changeClass = 'pos-up';
+                    changeText = `▲${diff}`;
+                } else if (diff < 0) {
+                    changeClass = 'pos-down';
+                    changeText = `▼${Math.abs(diff)}`;
+                }
+
+                const status = result.finishing_status || result.status || result.RunningStatus || 'Running';
+                const statusClass = status === 'Running' ? 'badge-green' : 'badge-gray';
+
+                return `
+                    <tr>
+                        <td class="position ${finPos <= 3 ? 'top3' : ''}">${finPos}</td>
+                        <td>${startPos} <span class="pos-change ${changeClass}">${changeText}</span></td>
+                        <td class="driver-name">
+                            <span class="car-number">${result.car_number || result.Number || '--'}</span>
+                            ${result.driver_fullname || result.driver_name || result.FullName || '--'}
+                        </td>
+                        <td>${result.car_make || result.manufacturer || result.Manufacturer || '--'}</td>
+                        <td>${result.laps_completed || result.LapsCompleted || '--'}</td>
+                        <td style="color: ${(result.laps_led || result.LapsLed || 0) > 0 ? '#39ff14' : '#666'}">${result.laps_led || result.LapsLed || 0}</td>
+                        <td><span class="badge ${statusClass}">${status}</span></td>
+                        <td>${result.points_earned || result.points || result.Points || '--'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            renderStageResults();
+        }
+
+        function renderStageResults() {
+            const container = document.getElementById('stageResults');
+            const stages = weekendData.stage_results || weekendData.stages || [];
+
+            if (stages.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 40px; grid-column: 1/-1;">No stage data available</p>';
+                return;
+            }
+
+            container.innerHTML = stages.map((stage, index) => {
+                const stageNum = stage.stage_number || (index + 1);
+                const stageResults = stage.results || [];
+                const winner = stageResults.length > 0 ? stageResults[0] : null;
+                
+                return `
+                    <div class="stage-panel">
+                        <div class="stage-title">Stage ${stageNum}</div>
+                        ${winner ? `
+                            <div class="stage-leader">
+                                <span class="car-number">${winner.car_number || '--'}</span>
+                                <span class="stage-leader-name">${winner.driver_fullname || '--'}</span>
+                                <span style="color: #39ff14; margin-left: auto;">${winner.stage_points || 10} pts</span>
+                            </div>
+                            <div class="stage-points-list">
+                                ${stageResults.slice(1, 10).map(r => `${r.driver_fullname}: ${r.stage_points}`).join(' • ')}
+                            </div>
+                        ` : '<p style="color: #666;">No data</p>'}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRaceStats() {
+            renderCautions();
+            renderLeadSummary();
+            renderInfractions();
+        }
+
+        function renderCautions() {
+            const container = document.getElementById('cautionList');
+            const cautions = weekendData.caution_segments || weekendData.cautions_list || [];
+
+            if (cautions.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 40px;">No caution data available</p>';
+                return;
+            }
+
+            container.innerHTML = cautions.map(caution => `
+                <div class="caution-item">
+                    <div class="caution-laps">Laps ${caution.start_lap || caution.StartLap || '--'}-${caution.end_lap || caution.EndLap || '--'}</div>
+                    <div>
+                        <div class="caution-reason">${caution.reason || caution.Reason || 'Caution'}</div>
+                        <div class="caution-comment">${caution.comment || ''}</div>
+                        ${caution.beneficiary_car_number ? `<div class="caution-beneficiary">Lucky Dog: #${caution.beneficiary_car_number}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderLeadSummary() {
+            const results = weekendData.results || [];
+            
+            document.getElementById('totalLeadChanges').textContent = weekendData.number_of_lead_changes || weekendData.lead_changes || '--';
+            document.getElementById('totalLeaders').textContent = weekendData.number_of_leaders || weekendData.leaders || '--';
+
+            // Find drivers who led laps
+            const leaders = results
+                .filter(r => (r.laps_led || r.LapsLed || 0) > 0)
+                .sort((a, b) => (b.laps_led || b.LapsLed) - (a.laps_led || a.LapsLed));
+
+            if (leaders.length > 0) {
+                document.getElementById('mostLapsLed').textContent = `#${leaders[0].car_number || leaders[0].Number}`;
+            }
+
+            const leadersBody = document.getElementById('leadersBody');
+            leadersBody.innerHTML = leaders.map(leader => `
+                <tr>
+                    <td class="driver-name">
+                        <span class="car-number">${leader.car_number || leader.Number}</span>
+                        ${leader.driver_fullname || leader.driver_name || leader.FullName}
+                    </td>
+                    <td style="color: #39ff14; font-weight: 600;">${leader.laps_led || leader.LapsLed}</td>
+                    <td>${leader.times_led || leader.TimesLed || '--'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderInfractions() {
+            const container = document.getElementById('infractionsContainer');
+            const infractions = weekendData.infractions || [];
+
+            if (infractions.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 30px;">No infractions recorded</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="drivers-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>Infraction</th>
+                            <th>Penalty</th>
+                            <th>Lap</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${infractions.map(inf => `
+                            <tr>
+                                <td class="driver-name">
+                                    <span class="car-number">${inf.car_number || '--'}</span>
+                                    ${inf.driver_name || '--'}
+                                </td>
+                                <td>${inf.infraction || inf.notes || '--'}</td>
+                                <td><span class="badge badge-red">${inf.penalty || '--'}</span></td>
+                                <td>${inf.lap || '--'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Tab switching
+        document.querySelectorAll('.view-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const viewId = tab.dataset.view;
+                
+                document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+                document.getElementById(`${viewId}-view`).classList.add('active');
+            });
+        });
+
+        // Event listeners
+        yearSelect.addEventListener('change', loadRaceList);
+        seriesSelect.addEventListener('change', populateRaceDropdown);
+        raceSelect.addEventListener('change', onRaceSelected);
+        loadRaceBtn.addEventListener('click', loadWeekendData);
+
+        // Initialize
+        loadRaceList();
+    </script>
+</body>
+</html>

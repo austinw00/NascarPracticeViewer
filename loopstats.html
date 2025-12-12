@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASCAR Loop Stats Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="shared-styles.css">
+    <style>
+        /* Loop Stats Specific Styles */
+        .race-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(57, 255, 20, 0.03);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+        }
+
+        .race-title-section h2 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .race-title-section p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .race-meta {
+            display: flex;
+            gap: 30px;
+        }
+
+        .race-meta-item {
+            text-align: center;
+        }
+
+        .race-meta-value {
+            color: #39ff14;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .race-meta-label {
+            color: #666;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Stats Cards */
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(57, 255, 20, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(57, 255, 20, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .stat-card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #39ff14;
+            margin-bottom: 5px;
+        }
+
+        .stat-card-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card-driver {
+            font-size: 0.85rem;
+            color: #ccc;
+            margin-top: 8px;
+        }
+
+        /* Loop Stats Table */
+        .loop-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .loop-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .loop-table th {
+            padding: 10px 6px;
+            text-align: center;
+            color: #39ff14;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.3px;
+            border-bottom: 2px solid rgba(57, 255, 20, 0.3);
+            background: #0d0d14;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .loop-table th:hover {
+            background: rgba(57, 255, 20, 0.1);
+        }
+
+        .loop-table th.sorted-asc::after {
+            content: ' ▲';
+            font-size: 0.6rem;
+        }
+
+        .loop-table th.sorted-desc::after {
+            content: ' ▼';
+            font-size: 0.6rem;
+        }
+
+        .loop-table th:first-child,
+        .loop-table th:nth-child(2) {
+            text-align: left;
+        }
+
+        .loop-table td {
+            padding: 10px 6px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .loop-table td:first-child,
+        .loop-table td:nth-child(2) {
+            text-align: left;
+        }
+
+        .loop-table tr:hover {
+            background: rgba(57, 255, 20, 0.03);
+        }
+
+        .loop-table .highlight-best {
+            color: #39ff14;
+            font-weight: 600;
+        }
+
+        .loop-table .highlight-worst {
+            color: #ff4444;
+        }
+
+        /* Position change indicators */
+        .pos-gain {
+            color: #39ff14;
+        }
+
+        .pos-loss {
+            color: #ff4444;
+        }
+
+        .pos-same {
+            color: #666;
+        }
+
+        /* Rating bar */
+        .rating-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rating-bar-fill {
+            height: 6px;
+            background: linear-gradient(90deg, #ff4444, #ffcc00, #39ff14);
+            border-radius: 3px;
+            min-width: 60px;
+        }
+
+        .rating-bar-bg {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            width: 60px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        /* Driver comparison section */
+        .compare-section {
+            margin-top: 25px;
+        }
+
+        .compare-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .compare-select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            min-width: 200px;
+        }
+
+        .compare-select:focus {
+            outline: none;
+            border-color: #39ff14;
+        }
+
+        .driver-comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .driver-stat-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 3px solid #39ff14;
+        }
+
+        .driver-stat-card h4 {
+            color: #fff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .driver-stat-card h4 .car-number {
+            background: rgba(57, 255, 20, 0.2);
+            color: #39ff14;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #888;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Radar chart container */
+        .radar-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Category filters */
+        .category-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .category-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .category-btn:hover {
+            border-color: rgba(57, 255, 20, 0.5);
+            color: #ccc;
+        }
+
+        .category-btn.active {
+            background: rgba(57, 255, 20, 0.2);
+            border-color: #39ff14;
+            color: #39ff14;
+        }
+
+        /* Leaderboard cards */
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .leaderboard-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .leaderboard-title {
+            color: #39ff14;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .leaderboard-rank {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .leaderboard-rank.gold {
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: #000;
+        }
+
+        .leaderboard-rank.silver {
+            background: linear-gradient(135deg, #c0c0c0, #808080);
+            color: #000;
+        }
+
+        .leaderboard-rank.bronze {
+            background: linear-gradient(135deg, #cd7f32, #8b4513);
+            color: #fff;
+        }
+
+        .leaderboard-rank.regular {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+        }
+
+        .leaderboard-driver {
+            flex: 1;
+            color: #ccc;
+            font-size: 0.85rem;
+        }
+
+        .leaderboard-value {
+            color: #39ff14;
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* Tooltip styles */
+        .tooltip-header {
+            font-size: 0.7rem;
+            color: #888;
+            cursor: help;
+            border-bottom: 1px dotted #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NASCAR Loop Stats Viewer</h1>
+            <p class="subtitle">Detailed Race Performance Analytics</p>
+            <div class="nav-links">
+                <a href="index.html">Practice Viewer</a>
+                <a href="weekend.html">Weekend Viewer</a>
+                <a href="loopstats.html" class="active">Loop Stats</a>
+                <a href="pitdata.html">Pit Data</a>
+            </div>
+        </header>
+
+        <div class="race-selector">
+            <div class="selector-group">
+                <label for="yearSelect">Year</label>
+                <select id="yearSelect">
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                </select>
+            </div>
+            <div class="selector-group">
+                <label for="seriesSelect">Series</label>
+                <select id="seriesSelect">
+                    <option value="1">Cup Series</option>
+                    <option value="2">Xfinity Series</option>
+                    <option value="3">Craftsman Truck Series</option>
+                </select>
+            </div>
+            <div class="selector-group">
+                <label for="raceSelect">Race</label>
+                <select id="raceSelect">
+                    <option value="">Select a race...</option>
+                </select>
+            </div>
+            <button class="load-btn" id="loadRaceBtn" disabled>Load Stats</button>
+        </div>
+
+        <div id="loopContent" style="display: none;">
+            <!-- Race Header -->
+            <div class="race-header" id="raceHeader">
+                <div class="race-title-section">
+                    <h2 id="raceName">--</h2>
+                    <p id="raceInfo">--</p>
+                </div>
+                <div class="race-meta">
+                    <div class="race-meta-item">
+                        <div class="race-meta-value" id="scheduledLaps">--</div>
+                        <div class="race-meta-label">Scheduled Laps</div>
+                    </div>
+                    <div class="race-meta-item">
+                        <div class="race-meta-value" id="actualLaps">--</div>
+                        <div class="race-meta-label">Actual Laps</div>
+                    </div>
+                    <div class="race-meta-item">
+                        <div class="race-meta-value" id="numDrivers">--</div>
+                        <div class="race-meta-label">Drivers</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Tabs -->
+            <div class="view-tabs">
+                <button class="view-tab active" data-view="overview">Overview</button>
+                <button class="view-tab" data-view="detailed">Detailed Stats</button>
+                <button class="view-tab" data-view="leaderboards">Leaderboards</button>
+                <button class="view-tab" data-view="compare">Compare Drivers</button>
+            </div>
+
+            <!-- Overview View -->
+            <div class="view-content active" id="overview-view">
+                <div class="stat-cards" id="topStats">
+                    <!-- Will be populated dynamically -->
+                </div>
+
+                <div class="panel">
+                    <h2 class="panel-title">Loop Stats Summary</h2>
+                    <div class="category-filters" id="categoryFilters">
+                        <button class="category-btn active" data-category="all">All Stats</button>
+                        <button class="category-btn" data-category="position">Position</button>
+                        <button class="category-btn" data-category="passing">Passing</button>
+                        <button class="category-btn" data-category="speed">Speed</button>
+                        <button class="category-btn" data-category="consistency">Consistency</button>
+                    </div>
+                    <div class="loop-table-container">
+                        <table class="loop-table" id="summaryTable">
+                            <thead id="summaryTableHead">
+                                <!-- Dynamic headers -->
+                            </thead>
+                            <tbody id="summaryTableBody">
+                                <tr><td colspan="10" style="color: #666; text-align: center; padding: 40px;">
+                                    Loading data...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Stats View -->
+            <div class="view-content" id="detailed-view">
+                <div class="panel">
+                    <h2 class="panel-title">Complete Loop Data</h2>
+                    <p style="color: #888; font-size: 0.85rem; margin-bottom: 15px;">
+                        Click on any column header to sort. All statistics from NASCAR's loop data system.
+                    </p>
+                    <div class="loop-table-container">
+                        <table class="loop-table" id="detailedTable">
+                            <thead>
+                                <tr>
+                                    <th data-sort="ps" title="Final Position">Fin</th>
+                                    <th data-sort="driver_name" title="Driver Name">Driver</th>
+                                    <th data-sort="start_ps" title="Starting Position">Start</th>
+                                    <th data-sort="mid_ps" title="Position at Halfway">Mid</th>
+                                    <th data-sort="closing_ps" title="Position with 50 Laps to Go">Close</th>
+                                    <th data-sort="best_ps" title="Best Position During Race">Best</th>
+                                    <th data-sort="worst_ps" title="Worst Position During Race">Worst</th>
+                                    <th data-sort="avg_ps" title="Average Running Position">Avg Pos</th>
+                                    <th data-sort="passes_gf" title="Green Flag Passes Made">Passes</th>
+                                    <th data-sort="passed_gf" title="Times Passed (Green Flag)">Passed</th>
+                                    <th data-sort="passing_diff" title="Net Passes (Passes - Passed)">+/-</th>
+                                    <th data-sort="quality_passes" title="Passes in Top 15">Quality</th>
+                                    <th data-sort="fast_laps" title="Laps as Fastest Car">Fast Laps</th>
+                                    <th data-sort="top15_laps" title="Laps Running in Top 15">Top 15</th>
+                                    <th data-sort="lead_laps" title="Laps Led">Led</th>
+                                    <th data-sort="laps" title="Total Laps Completed">Laps</th>
+                                    <th data-sort="rating" title="Driver Rating">Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailedTableBody">
+                                <tr><td colspan="17" style="color: #666; text-align: center; padding: 40px;">
+                                    Loading data...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboards View -->
+            <div class="view-content" id="leaderboards-view">
+                <div class="leaderboard-grid" id="leaderboardGrid">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Compare Drivers View -->
+            <div class="view-content" id="compare-view">
+                <div class="compare-controls">
+                    <select class="compare-select" id="driver1Select">
+                        <option value="">Select Driver 1...</option>
+                    </select>
+                    <span style="color: #666;">vs</span>
+                    <select class="compare-select" id="driver2Select">
+                        <option value="">Select Driver 2...</option>
+                    </select>
+                    <button class="load-btn" id="compareBtn" style="padding: 10px 25px;">Compare</button>
+                </div>
+
+                <div class="dashboard" id="comparisonContent" style="display: none;">
+                    <div class="panel" style="grid-column: span 2;">
+                        <h2 class="panel-title">Performance Comparison</h2>
+                        <div class="radar-container">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="driver-comparison-grid" id="comparisonGrid">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingState" style="display: none;">
+            <div class="panel" style="text-align: center; padding: 60px;">
+                <div class="loading-spinner"></div>
+                <p style="color: #666;">Loading loop stats...</p>
+            </div>
+        </div>
+
+        <div id="initialState">
+            <div class="panel" style="text-align: center; padding: 60px;">
+                <p style="color: #666; font-size: 1.1rem;">Select a race from the dropdown above to view loop stats</p>
+                <p style="color: #555; font-size: 0.9rem; margin-top: 10px;">
+                    Loop stats include detailed telemetry data like passes, position changes, and driver ratings
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            NASCAR Loop Stats Viewer &copy; 2025 | Data from NASCAR Loop Data System
+        </footer>
+    </div>
+
+    <script>
+        const RACE_LIST_BASE_URL = 'https://cf.nascar.com/cacher/';
+        const LOOP_STATS_BASE_URL = 'https://cf.nascar.com/loopstats/prod/';
+        
+        let loopData = null;
+        let raceListData = {};
+        let driverMap = {};
+        let currentSort = { column: 'ps', direction: 'asc' };
+        let radarChart = null;
+
+        // DOM Elements
+        const yearSelect = document.getElementById('yearSelect');
+        const seriesSelect = document.getElementById('seriesSelect');
+        const raceSelect = document.getElementById('raceSelect');
+        const loadRaceBtn = document.getElementById('loadRaceBtn');
+        const loopContent = document.getElementById('loopContent');
+        const loadingState = document.getElementById('loadingState');
+        const initialState = document.getElementById('initialState');
+
+        // Driver ID to name mapping (will be populated from race list)
+        async function loadDriverNames() {
+            // Try to load from weekend feed for driver names
+            // This is a simplified version - in production you'd want a proper driver database
+        }
+
+        // Load race list for selected year
+        async function loadRaceList() {
+            const year = yearSelect.value;
+            const raceListUrl = `${RACE_LIST_BASE_URL}${year}/race_list_basic.json`;
+            
+            raceSelect.innerHTML = '<option value="">Loading races...</option>';
+            raceSelect.disabled = true;
+            loadRaceBtn.disabled = true;
+
+            try {
+                const response = await fetch(raceListUrl);
+                if (!response.ok) throw new Error('Failed to fetch race list');
+                raceListData = await response.json();
+                populateRaceDropdown();
+            } catch (error) {
+                console.error('Error loading race list:', error);
+                raceSelect.innerHTML = '<option value="">Failed to load races</option>';
+            }
+        }
+
+        // Populate race dropdown based on selected series
+        function populateRaceDropdown() {
+            const seriesId = seriesSelect.value;
+            const seriesKey = `series_${seriesId}`;
+            const races = raceListData[seriesKey] || [];
+
+            raceSelect.innerHTML = '<option value="">Select a race...</option>';
+
+            races.forEach(race => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify({
+                    race_id: race.race_id,
+                    series_id: race.series_id,
+                    race_season: race.race_season,
+                    race_name: race.race_name,
+                    track_name: race.track_name
+                });
+                
+                const raceDate = new Date(race.date_scheduled);
+                const dateStr = raceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                option.textContent = `${dateStr} - ${race.race_name} (${race.track_name})`;
+                raceSelect.appendChild(option);
+            });
+
+            raceSelect.disabled = false;
+        }
+
+        function onRaceSelected() {
+            loadRaceBtn.disabled = !raceSelect.value;
+        }
+
+        async function loadLoopStats() {
+            if (!raceSelect.value) return;
+
+            const raceInfo = JSON.parse(raceSelect.value);
+            const { race_id, series_id, race_season } = raceInfo;
+
+            const loopUrl = `${LOOP_STATS_BASE_URL}${race_season}/${series_id}/${race_id}.json`;
+
+            initialState.style.display = 'none';
+            loadingState.style.display = 'block';
+            loopContent.style.display = 'none';
+
+            try {
+                // Load loop stats
+                const loopResponse = await fetch(loopUrl);
+                if (!loopResponse.ok) throw new Error('Failed to fetch loop stats');
+                const loopArray = await loopResponse.json();
+                loopData = loopArray[0]; // First element contains the race data
+
+                // Try to load weekend feed for driver names
+                try {
+                    const weekendUrl = `https://cf.nascar.com/cacher/${race_season}/${series_id}/${race_id}/weekend-feed.json`;
+                    const weekendResponse = await fetch(weekendUrl);
+                    if (weekendResponse.ok) {
+                        const weekendData = await weekendResponse.json();
+                        const raceData = weekendData.weekend_race ? weekendData.weekend_race[0] : weekendData;
+                        if (raceData.results) {
+                            raceData.results.forEach(r => {
+                                driverMap[r.driver_id] = {
+                                    name: r.driver_fullname || r.driver_name,
+                                    car: r.car_number,
+                                    team: r.team_name
+                                };
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.log('Weekend feed not available, using driver IDs');
+                }
+                
+                loadingState.style.display = 'none';
+                loopContent.style.display = 'block';
+                
+                renderLoopData(raceInfo);
+            } catch (error) {
+                console.error('Error loading loop stats:', error);
+                loadingState.style.display = 'none';
+                initialState.style.display = 'block';
+                initialState.innerHTML = `
+                    <div class="panel" style="text-align: center; padding: 60px;">
+                        <p style="color: #ff4444;">Failed to load loop stats for this race.</p>
+                        <p style="font-size: 0.85rem; margin-top: 10px; color: #888;">
+                            Loop stats may not be available for this race yet.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function getDriverName(driverId) {
+            if (driverMap[driverId]) {
+                return driverMap[driverId].name;
+            }
+            return `Driver #${driverId}`;
+        }
+
+        function getDriverCar(driverId) {
+            if (driverMap[driverId]) {
+                return driverMap[driverId].car;
+            }
+            return '--';
+        }
+
+        function renderLoopData(raceInfo) {
+            if (!loopData) return;
+
+            // Header Info
+            document.getElementById('raceName').textContent = loopData.race_name || raceInfo.race_name || '--';
+            document.getElementById('raceInfo').textContent = `${raceInfo.track_name || '--'} • ${raceInfo.race_season || '--'}`;
+            document.getElementById('scheduledLaps').textContent = loopData.sch_laps || '--';
+            document.getElementById('actualLaps').textContent = loopData.act_laps || '--';
+            document.getElementById('numDrivers').textContent = loopData.drivers ? loopData.drivers.length : '--';
+
+            renderTopStats();
+            renderSummaryTable();
+            renderDetailedTable();
+            renderLeaderboards();
+            populateDriverSelects();
+        }
+
+        function renderTopStats() {
+            const drivers = loopData.drivers || [];
+            if (drivers.length === 0) return;
+
+            // Find leaders in each category
+            const bestRating = [...drivers].sort((a, b) => b.rating - a.rating)[0];
+            const mostPasses = [...drivers].sort((a, b) => b.passes_gf - a.passes_gf)[0];
+            const mostLapsLed = [...drivers].sort((a, b) => b.lead_laps - a.lead_laps)[0];
+            const bestAvgPos = [...drivers].sort((a, b) => a.avg_ps - b.avg_ps)[0];
+            const mostFastLaps = [...drivers].sort((a, b) => b.fast_laps - a.fast_laps)[0];
+            const mostQualityPasses = [...drivers].sort((a, b) => b.quality_passes - a.quality_passes)[0];
+
+            const container = document.getElementById('topStats');
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-card-value">${bestRating.rating.toFixed(1)}</div>
+                    <div class="stat-card-label">Best Rating</div>
+                    <div class="stat-card-driver">${getDriverName(bestRating.driver_id)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value">${mostLapsLed.lead_laps}</div>
+                    <div class="stat-card-label">Most Laps Led</div>
+                    <div class="stat-card-driver">${getDriverName(mostLapsLed.driver_id)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value">${bestAvgPos.avg_ps.toFixed(1)}</div>
+                    <div class="stat-card-label">Best Avg Position</div>
+                    <div class="stat-card-driver">${getDriverName(bestAvgPos.driver_id)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value">${mostPasses.passes_gf}</div>
+                    <div class="stat-card-label">Most Passes</div>
+                    <div class="stat-card-driver">${getDriverName(mostPasses.driver_id)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value">${mostFastLaps.fast_laps}</div>
+                    <div class="stat-card-label">Most Fast Laps</div>
+                    <div class="stat-card-driver">${getDriverName(mostFastLaps.driver_id)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value">${mostQualityPasses.quality_passes}</div>
+                    <div class="stat-card-label">Most Quality Passes</div>
+                    <div class="stat-card-driver">${getDriverName(mostQualityPasses.driver_id)}</div>
+                </div>
+            `;
+        }
+
+        function renderSummaryTable(category = 'all') {
+            const drivers = loopData.drivers || [];
+            const thead = document.getElementById('summaryTableHead');
+            const tbody = document.getElementById('summaryTableBody');
+
+            // Define columns based on category
+            let columns = [];
+            switch (category) {
+                case 'position':
+                    columns = [
+                        { key: 'ps', label: 'Fin', title: 'Final Position' },
+                        { key: 'driver_name', label: 'Driver', title: 'Driver Name' },
+                        { key: 'start_ps', label: 'Start', title: 'Starting Position' },
+                        { key: 'mid_ps', label: 'Mid', title: 'Halfway Position' },
+                        { key: 'closing_ps', label: 'Close', title: 'Closing Position' },
+                        { key: 'best_ps', label: 'Best', title: 'Best Position' },
+                        { key: 'worst_ps', label: 'Worst', title: 'Worst Position' },
+                        { key: 'avg_ps', label: 'Avg', title: 'Average Position' }
+                    ];
+                    break;
+                case 'passing':
+                    columns = [
+                        { key: 'ps', label: 'Fin', title: 'Final Position' },
+                        { key: 'driver_name', label: 'Driver', title: 'Driver Name' },
+                        { key: 'passes_gf', label: 'Passes', title: 'Green Flag Passes' },
+                        { key: 'passed_gf', label: 'Passed', title: 'Times Passed' },
+                        { key: 'passing_diff', label: '+/-', title: 'Net Passes' },
+                        { key: 'quality_passes', label: 'Quality', title: 'Quality Passes (Top 15)' }
+                    ];
+                    break;
+                case 'speed':
+                    columns = [
+                        { key: 'ps', label: 'Fin', title: 'Final Position' },
+                        { key: 'driver_name', label: 'Driver', title: 'Driver Name' },
+                        { key: 'fast_laps', label: 'Fast Laps', title: 'Laps as Fastest' },
+                        { key: 'top15_laps', label: 'Top 15', title: 'Laps in Top 15' },
+                        { key: 'lead_laps', label: 'Led', title: 'Laps Led' },
+                        { key: 'laps', label: 'Laps', title: 'Total Laps' }
+                    ];
+                    break;
+                case 'consistency':
+                    columns = [
+                        { key: 'ps', label: 'Fin', title: 'Final Position' },
+                        { key: 'driver_name', label: 'Driver', title: 'Driver Name' },
+                        { key: 'avg_ps', label: 'Avg Pos', title: 'Average Position' },
+                        { key: 'best_ps', label: 'Best', title: 'Best Position' },
+                        { key: 'worst_ps', label: 'Worst', title: 'Worst Position' },
+                        { key: 'rating', label: 'Rating', title: 'Driver Rating' }
+                    ];
+                    break;
+                default: // all
+                    columns = [
+                        { key: 'ps', label: 'Fin', title: 'Final Position' },
+                        { key: 'driver_name', label: 'Driver', title: 'Driver Name' },
+                        { key: 'start_ps', label: 'St', title: 'Starting Position' },
+                        { key: 'avg_ps', label: 'Avg', title: 'Average Position' },
+                        { key: 'passes_gf', label: 'Pass', title: 'Passes Made' },
+                        { key: 'passing_diff', label: '+/-', title: 'Net Passes' },
+                        { key: 'fast_laps', label: 'Fast', title: 'Fast Laps' },
+                        { key: 'lead_laps', label: 'Led', title: 'Laps Led' },
+                        { key: 'rating', label: 'Rating', title: 'Driver Rating' }
+                    ];
+            }
+
+            // Render headers
+            thead.innerHTML = `<tr>${columns.map(col => 
+                `<th data-sort="${col.key}" title="${col.title}">${col.label}</th>`
+            ).join('')}</tr>`;
+
+            // Sort drivers
+            const sortedDrivers = [...drivers].sort((a, b) => {
+                let aVal = currentSort.column === 'driver_name' ? getDriverName(a.driver_id) : a[currentSort.column];
+                let bVal = currentSort.column === 'driver_name' ? getDriverName(b.driver_id) : b[currentSort.column];
+                
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                }
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+
+            // Find best values for highlighting
+            const bestValues = {};
+            columns.forEach(col => {
+                if (col.key !== 'driver_name' && col.key !== 'ps') {
+                    const values = drivers.map(d => d[col.key]).filter(v => v !== undefined);
+                    if (['worst_ps', 'passed_gf', 'avg_ps'].includes(col.key)) {
+                        // Lower is better for these
+                        bestValues[col.key] = Math.min(...values);
+                    } else {
+                        bestValues[col.key] = Math.max(...values);
+                    }
+                }
+            });
+
+            // Render rows
+            tbody.innerHTML = sortedDrivers.map(driver => {
+                return `<tr>${columns.map(col => {
+                    let value = col.key === 'driver_name' ? getDriverName(driver.driver_id) : driver[col.key];
+                    let cellClass = '';
+                    
+                    if (col.key === 'driver_name') {
+                        const car = getDriverCar(driver.driver_id);
+                        return `<td class="driver-name"><span class="car-number">${car}</span>${value}</td>`;
+                    }
+                    
+                    if (col.key === 'passing_diff') {
+                        if (value > 0) cellClass = 'pos-gain';
+                        else if (value < 0) cellClass = 'pos-loss';
+                        value = value > 0 ? `+${value}` : value;
+                    }
+                    
+                    if (col.key === 'rating') {
+                        value = value.toFixed(1);
+                    }
+                    
+                    if (col.key === 'avg_ps') {
+                        value = value.toFixed(1);
+                    }
+                    
+                    // Highlight best values
+                    if (bestValues[col.key] !== undefined && driver[col.key] === bestValues[col.key]) {
+                        cellClass = 'highlight-best';
+                    }
+                    
+                    return `<td class="${cellClass}">${value}</td>`;
+                }).join('')}</tr>`;
+            }).join('');
+
+            // Add sort handlers
+            thead.querySelectorAll('th').forEach(th => {
+                th.addEventListener('click', () => handleSummarySort(th.dataset.sort, category));
+            });
+
+            // Update sort indicator
+            updateSortIndicators(thead);
+        }
+
+        function handleSummarySort(column, category) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            renderSummaryTable(category);
+        }
+
+        function updateSortIndicators(thead) {
+            thead.querySelectorAll('th').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === currentSort.column) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        function renderDetailedTable() {
+            const drivers = loopData.drivers || [];
+            const tbody = document.getElementById('detailedTableBody');
+            const thead = document.querySelector('#detailedTable thead');
+
+            const sortedDrivers = [...drivers].sort((a, b) => {
+                let aVal = currentSort.column === 'driver_name' ? getDriverName(a.driver_id) : a[currentSort.column];
+                let bVal = currentSort.column === 'driver_name' ? getDriverName(b.driver_id) : b[currentSort.column];
+                
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                }
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+
+            tbody.innerHTML = sortedDrivers.map(driver => {
+                const diffClass = driver.passing_diff > 0 ? 'pos-gain' : driver.passing_diff < 0 ? 'pos-loss' : 'pos-same';
+                const diffText = driver.passing_diff > 0 ? `+${driver.passing_diff}` : driver.passing_diff;
+                
+                return `
+                    <tr>
+                        <td class="position ${driver.ps <= 3 ? 'top3' : ''}">${driver.ps}</td>
+                        <td class="driver-name">
+                            <span class="car-number">${getDriverCar(driver.driver_id)}</span>
+                            ${getDriverName(driver.driver_id)}
+                        </td>
+                        <td>${driver.start_ps}</td>
+                        <td>${driver.mid_ps}</td>
+                        <td>${driver.closing_ps}</td>
+                        <td class="highlight-best">${driver.best_ps}</td>
+                        <td class="highlight-worst">${driver.worst_ps}</td>
+                        <td>${driver.avg_ps.toFixed(1)}</td>
+                        <td>${driver.passes_gf}</td>
+                        <td>${driver.passed_gf}</td>
+                        <td class="${diffClass}">${diffText}</td>
+                        <td>${driver.quality_passes}</td>
+                        <td>${driver.fast_laps}</td>
+                        <td>${driver.top15_laps}</td>
+                        <td style="color: ${driver.lead_laps > 0 ? '#39ff14' : '#666'}">${driver.lead_laps}</td>
+                        <td>${driver.laps}</td>
+                        <td>
+                            <div class="rating-bar">
+                                <div class="rating-bar-bg">
+                                    <div class="rating-bar-fill" style="width: ${(driver.rating / 150) * 100}%"></div>
+                                </div>
+                                <span>${driver.rating.toFixed(1)}</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Add sort handlers
+            thead.querySelectorAll('th').forEach(th => {
+                th.onclick = () => {
+                    const column = th.dataset.sort;
+                    if (currentSort.column === column) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.column = column;
+                        currentSort.direction = 'asc';
+                    }
+                    renderDetailedTable();
+                    updateSortIndicators(thead);
+                };
+            });
+
+            updateSortIndicators(thead);
+        }
+
+        function renderLeaderboards() {
+            const drivers = loopData.drivers || [];
+            const container = document.getElementById('leaderboardGrid');
+
+            const leaderboards = [
+                { title: 'Driver Rating', key: 'rating', format: v => v.toFixed(1), sortDesc: true },
+                { title: 'Laps Led', key: 'lead_laps', sortDesc: true },
+                { title: 'Average Position', key: 'avg_ps', format: v => v.toFixed(1), sortDesc: false },
+                { title: 'Green Flag Passes', key: 'passes_gf', sortDesc: true },
+                { title: 'Quality Passes', key: 'quality_passes', sortDesc: true },
+                { title: 'Fast Laps', key: 'fast_laps', sortDesc: true },
+                { title: 'Top 15 Laps', key: 'top15_laps', sortDesc: true },
+                { title: 'Net Passing', key: 'passing_diff', format: v => v > 0 ? `+${v}` : v, sortDesc: true }
+            ];
+
+            container.innerHTML = leaderboards.map(lb => {
+                const sorted = [...drivers].sort((a, b) => 
+                    lb.sortDesc ? b[lb.key] - a[lb.key] : a[lb.key] - b[lb.key]
+                ).slice(0, 5);
+
+                return `
+                    <div class="leaderboard-card">
+                        <div class="leaderboard-title">${lb.title}</div>
+                        ${sorted.map((driver, index) => {
+                            const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'regular';
+                            const value = lb.format ? lb.format(driver[lb.key]) : driver[lb.key];
+                            return `
+                                <div class="leaderboard-item">
+                                    <div class="leaderboard-rank ${rankClass}">${index + 1}</div>
+                                    <div class="leaderboard-driver">${getDriverName(driver.driver_id)}</div>
+                                    <div class="leaderboard-value">${value}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function populateDriverSelects() {
+            const drivers = loopData.drivers || [];
+            const sortedDrivers = [...drivers].sort((a, b) => a.ps - b.ps);
+
+            const options = sortedDrivers.map(d => 
+                `<option value="${d.driver_id}">P${d.ps} - ${getDriverName(d.driver_id)}</option>`
+            ).join('');
+
+            document.getElementById('driver1Select').innerHTML = '<option value="">Select Driver 1...</option>' + options;
+            document.getElementById('driver2Select').innerHTML = '<option value="">Select Driver 2...</option>' + options;
+        }
+
+        function compareDrivers() {
+            const driver1Id = parseInt(document.getElementById('driver1Select').value);
+            const driver2Id = parseInt(document.getElementById('driver2Select').value);
+
+            if (!driver1Id || !driver2Id) {
+                alert('Please select two drivers to compare');
+                return;
+            }
+
+            const driver1 = loopData.drivers.find(d => d.driver_id === driver1Id);
+            const driver2 = loopData.drivers.find(d => d.driver_id === driver2Id);
+
+            if (!driver1 || !driver2) return;
+
+            document.getElementById('comparisonContent').style.display = 'grid';
+
+            // Render comparison cards
+            const grid = document.getElementById('comparisonGrid');
+            grid.innerHTML = [driver1, driver2].map((driver, index) => `
+                <div class="driver-stat-card" style="border-left-color: ${index === 0 ? '#39ff14' : '#00bfff'}">
+                    <h4>
+                        <span class="car-number">#${getDriverCar(driver.driver_id)}</span>
+                        ${getDriverName(driver.driver_id)}
+                    </h4>
+                    <div class="stat-row">
+                        <span class="stat-label">Finish Position</span>
+                        <span class="stat-value">${driver.ps}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Starting Position</span>
+                        <span class="stat-value">${driver.start_ps}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Average Position</span>
+                        <span class="stat-value">${driver.avg_ps.toFixed(1)}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Best Position</span>
+                        <span class="stat-value">${driver.best_ps}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Driver Rating</span>
+                        <span class="stat-value">${driver.rating.toFixed(1)}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Green Flag Passes</span>
+                        <span class="stat-value">${driver.passes_gf}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Quality Passes</span>
+                        <span class="stat-value">${driver.quality_passes}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Fast Laps</span>
+                        <span class="stat-value">${driver.fast_laps}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Laps Led</span>
+                        <span class="stat-value">${driver.lead_laps}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Top 15 Laps</span>
+                        <span class="stat-value">${driver.top15_laps}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render radar chart
+            renderRadarChart(driver1, driver2);
+        }
+
+        function renderRadarChart(driver1, driver2) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            if (radarChart) {
+                radarChart.destroy();
+            }
+
+            // Normalize values for radar chart (0-100 scale)
+            const maxValues = {
+                rating: 150,
+                passes_gf: Math.max(driver1.passes_gf, driver2.passes_gf, 100),
+                quality_passes: Math.max(driver1.quality_passes, driver2.quality_passes, 50),
+                fast_laps: Math.max(driver1.fast_laps, driver2.fast_laps, 30),
+                lead_laps: Math.max(driver1.lead_laps, driver2.lead_laps, 50),
+                top15_laps: loopData.act_laps
+            };
+
+            const normalize = (value, max) => (value / max) * 100;
+
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Rating', 'Passes', 'Quality Passes', 'Fast Laps', 'Laps Led', 'Top 15 Laps'],
+                    datasets: [
+                        {
+                            label: getDriverName(driver1.driver_id),
+                            data: [
+                                normalize(driver1.rating, maxValues.rating),
+                                normalize(driver1.passes_gf, maxValues.passes_gf),
+                                normalize(driver1.quality_passes, maxValues.quality_passes),
+                                normalize(driver1.fast_laps, maxValues.fast_laps),
+                                normalize(driver1.lead_laps, maxValues.lead_laps),
+                                normalize(driver1.top15_laps, maxValues.top15_laps)
+                            ],
+                            backgroundColor: 'rgba(57, 255, 20, 0.2)',
+                            borderColor: '#39ff14',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#39ff14'
+                        },
+                        {
+                            label: getDriverName(driver2.driver_id),
+                            data: [
+                                normalize(driver2.rating, maxValues.rating),
+                                normalize(driver2.passes_gf, maxValues.passes_gf),
+                                normalize(driver2.quality_passes, maxValues.quality_passes),
+                                normalize(driver2.fast_laps, maxValues.fast_laps),
+                                normalize(driver2.lead_laps, maxValues.lead_laps),
+                                normalize(driver2.top15_laps, maxValues.top15_laps)
+                            ],
+                            backgroundColor: 'rgba(0, 191, 255, 0.2)',
+                            borderColor: '#00bfff',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#00bfff'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                display: false
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            angleLines: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            pointLabels: {
+                                color: '#888',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#888',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Tab switching
+        document.querySelectorAll('.view-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const viewId = tab.dataset.view;
+                
+                document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+                document.getElementById(`${viewId}-view`).classList.add('active');
+            });
+        });
+
+        // Category filter handlers
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSort = { column: 'ps', direction: 'asc' };
+                renderSummaryTable(btn.dataset.category);
+            });
+        });
+
+        // Event listeners
+        yearSelect.addEventListener('change', loadRaceList);
+        seriesSelect.addEventListener('change', populateRaceDropdown);
+        raceSelect.addEventListener('change', onRaceSelected);
+        loadRaceBtn.addEventListener('click', loadLoopStats);
+        document.getElementById('compareBtn').addEventListener('click', compareDrivers);
+
+        // Initialize
+        loadRaceList();
+    </script>
+</body>
+</html>

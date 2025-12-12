@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASCAR Live Pit Data Viewer</title>
+    <link rel="stylesheet" href="shared-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .pit-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .pit-stat-card {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .pit-stat-card .label {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .pit-stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .pit-stat-card .driver {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .tire-indicator {
+            display: inline-flex;
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .tire {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #555;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .tire.changed {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .tire.not-changed {
+            background: #333;
+            border-color: #666;
+        }
+
+        .pit-stop-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .pit-stop-type.four-wheel { background: #4caf50; color: #fff; }
+        .pit-stop-type.two-wheel-left { background: #ff9800; color: #fff; }
+        .pit-stop-type.two-wheel-right { background: #ff9800; color: #fff; }
+        .pit-stop-type.other { background: #9c27b0; color: #fff; }
+        .pit-stop-type.fuel-only { background: #2196f3; color: #fff; }
+
+        .position-change {
+            font-weight: bold;
+        }
+
+        .position-change.gained {
+            color: #4caf50;
+        }
+
+        .position-change.lost {
+            color: #f44336;
+        }
+
+        .position-change.neutral {
+            color: #888;
+        }
+
+        .duration-bar {
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .duration-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .duration-bar-fill.fast { background: #4caf50; }
+        .duration-bar-fill.medium { background: #ff9800; }
+        .duration-bar-fill.slow { background: #f44336; }
+
+        .driver-pit-history {
+            margin-top: 20px;
+        }
+
+        .pit-stop-card {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .pit-stop-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .pit-stop-card-header .lap {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .pit-stop-card-header .stop-type {
+            font-size: 12px;
+        }
+
+        .pit-stop-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .pit-stop-detail {
+            text-align: center;
+        }
+
+        .pit-stop-detail .label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .pit-stop-detail .value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .flag-indicator {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .flag-indicator.green { background: #4caf50; color: #fff; }
+        .flag-indicator.yellow { background: #ffeb3b; color: #000; }
+        .flag-indicator.red { background: #f44336; color: #fff; }
+        .flag-indicator.checkered { background: #fff; color: #000; }
+
+        .chart-container {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .leaderboard-card {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .leaderboard-card h4 {
+            margin: 0 0 10px 0;
+            color: #4fc3f7;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #3d3d3d;
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .leaderboard-item .rank {
+            color: #888;
+            width: 25px;
+        }
+
+        .leaderboard-item .name {
+            flex: 1;
+        }
+
+        .leaderboard-item .value {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .compare-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .compare-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .compare-driver-card {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .compare-driver-card h4 {
+            margin: 0 0 15px 0;
+            color: #4fc3f7;
+        }
+
+        .avg-stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #3d3d3d;
+        }
+
+        .avg-stats-row:last-child {
+            border-bottom: none;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-row label {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .filter-row select {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 6px 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🏁 NASCAR Live Pit Data Viewer</h1>
+        <div class="nav-links">
+            <a href="index.html">Practice Viewer</a>
+            <a href="weekend.html">Weekend Viewer</a>
+            <a href="loopstats.html">Loop Stats</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="controls-panel">
+            <div class="race-selector">
+                <label for="yearSelect">Year:</label>
+                <select id="yearSelect"></select>
+
+                <label for="seriesSelect">Series:</label>
+                <select id="seriesSelect">
+                    <option value="1">Cup Series</option>
+                    <option value="2">Xfinity Series</option>
+                    <option value="3">Truck Series</option>
+                </select>
+
+                <label for="raceSelect">Race:</label>
+                <select id="raceSelect">
+                    <option value="">Select a race...</option>
+                </select>
+
+                <button id="loadBtn" class="load-btn">Load Pit Data</button>
+            </div>
+        </div>
+
+        <div class="view-tabs">
+            <button class="view-tab active" data-view="overview">Overview</button>
+            <button class="view-tab" data-view="all-stops">All Pit Stops</button>
+            <button class="view-tab" data-view="leaderboards">Leaderboards</button>
+            <button class="view-tab" data-view="driver-detail">Driver Detail</button>
+        </div>
+
+        <div id="content">
+            <div class="placeholder-message">
+                Select a year, series, and race, then click "Load Pit Data" to view pit stop information.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global state
+        let pitData = [];
+        let raceList = [];
+        let currentView = 'overview';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initYearSelector();
+            setupEventListeners();
+        });
+
+        function initYearSelector() {
+            const yearSelect = document.getElementById('yearSelect');
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear; y >= 2020; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            }
+            yearSelect.addEventListener('change', loadRaceList);
+            document.getElementById('seriesSelect').addEventListener('change', loadRaceList);
+            loadRaceList();
+        }
+
+        async function loadRaceList() {
+            const year = document.getElementById('yearSelect').value;
+            const raceSelect = document.getElementById('raceSelect');
+            raceSelect.innerHTML = '<option value="">Loading...</option>';
+
+            try {
+                const resp = await fetch(`https://cf.nascar.com/cacher/${year}/race_list_basic.json`);
+                raceList = await resp.json();
+                populateRaceSelect();
+            } catch (err) {
+                console.error('Error loading race list:', err);
+                raceSelect.innerHTML = '<option value="">Error loading races</option>';
+            }
+        }
+
+        function populateRaceSelect() {
+            const series = document.getElementById('seriesSelect').value;
+            const raceSelect = document.getElementById('raceSelect');
+            raceSelect.innerHTML = '<option value="">Select a race...</option>';
+
+            // Race list is organized by series_1, series_2, series_3 keys
+            const seriesKey = `series_${series}`;
+            const seriesRaces = raceList[seriesKey] || [];
+            
+            seriesRaces.forEach(race => {
+                const opt = document.createElement('option');
+                opt.value = race.race_id;
+                
+                // Format date for display
+                const raceDate = new Date(race.date_scheduled);
+                const dateStr = raceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                opt.textContent = `${dateStr} - ${race.race_name} (${race.track_name})`;
+                raceSelect.appendChild(opt);
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('loadBtn').addEventListener('click', loadPitData);
+
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentView = tab.dataset.view;
+                    renderContent();
+                });
+            });
+        }
+
+        async function loadPitData() {
+            const year = document.getElementById('yearSelect').value;
+            const series = document.getElementById('seriesSelect').value;
+            const raceId = document.getElementById('raceSelect').value;
+
+            if (!raceId) {
+                alert('Please select a race');
+                return;
+            }
+
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="placeholder-message">Loading pit data...</div>';
+
+            try {
+                // URL format: https://cf.nascar.com/cacher/live/series_{series}/{race_id}/live-pit-data.json
+                const url = `https://cf.nascar.com/cacher/live/series_${series}/${raceId}/live-pit-data.json`;
+                const resp = await fetch(url);
+                
+                if (!resp.ok) {
+                    throw new Error(`HTTP ${resp.status}`);
+                }
+                
+                pitData = await resp.json();
+                
+                if (!pitData || pitData.length === 0) {
+                    content.innerHTML = '<div class="placeholder-message">No pit data available for this race.</div>';
+                    return;
+                }
+
+                renderContent();
+            } catch (err) {
+                console.error('Error loading pit data:', err);
+                content.innerHTML = `<div class="placeholder-message">Error loading pit data: ${err.message}<br><br>Note: Pit data may only be available during or after live races.</div>`;
+            }
+        }
+
+        function renderContent() {
+            const content = document.getElementById('content');
+
+            switch (currentView) {
+                case 'overview':
+                    renderOverview(content);
+                    break;
+                case 'all-stops':
+                    renderAllStops(content);
+                    break;
+                case 'leaderboards':
+                    renderLeaderboards(content);
+                    break;
+                case 'driver-detail':
+                    renderDriverDetail(content);
+                    break;
+            }
+        }
+
+        function renderOverview(container) {
+            // Calculate summary statistics
+            const driverStats = aggregateDriverStats();
+            const totalStops = pitData.length;
+            const uniqueDrivers = new Set(pitData.map(p => p.vehicle_number)).size;
+            
+            // Find best/worst pit stops
+            const fourWheelStops = pitData.filter(p => p.pit_stop_type === 'FOUR_WHEEL_CHANGE' && p.pit_stop_duration > 0);
+            let fastestStop = null, slowestStop = null, avgDuration = 0;
+            
+            if (fourWheelStops.length > 0) {
+                fastestStop = fourWheelStops.reduce((a, b) => a.pit_stop_duration < b.pit_stop_duration ? a : b);
+                slowestStop = fourWheelStops.reduce((a, b) => a.pit_stop_duration > b.pit_stop_duration ? a : b);
+                avgDuration = fourWheelStops.reduce((sum, p) => sum + p.pit_stop_duration, 0) / fourWheelStops.length;
+            }
+
+            // Find most positions gained/lost
+            const maxGained = pitData.reduce((a, b) => a.positions_gained_lost > b.positions_gained_lost ? a : b);
+            const maxLost = pitData.reduce((a, b) => a.positions_gained_lost < b.positions_gained_lost ? a : b);
+
+            container.innerHTML = `
+                <div class="panel">
+                    <h3>Race Summary</h3>
+                    <div class="pit-stats-grid">
+                        <div class="pit-stat-card">
+                            <div class="label">Total Pit Stops</div>
+                            <div class="value">${totalStops}</div>
+                        </div>
+                        <div class="pit-stat-card">
+                            <div class="label">Drivers</div>
+                            <div class="value">${uniqueDrivers}</div>
+                        </div>
+                        <div class="pit-stat-card">
+                            <div class="label">Fastest Stop (4-Tire)</div>
+                            <div class="value">${fastestStop ? fastestStop.pit_stop_duration.toFixed(3) + 's' : 'N/A'}</div>
+                            <div class="driver">${fastestStop ? `#${fastestStop.vehicle_number} ${fastestStop.driver_name}` : ''}</div>
+                        </div>
+                        <div class="pit-stat-card">
+                            <div class="label">Slowest Stop (4-Tire)</div>
+                            <div class="value">${slowestStop ? slowestStop.pit_stop_duration.toFixed(3) + 's' : 'N/A'}</div>
+                            <div class="driver">${slowestStop ? `#${slowestStop.vehicle_number} ${slowestStop.driver_name}` : ''}</div>
+                        </div>
+                        <div class="pit-stat-card">
+                            <div class="label">Avg Stop Time (4-Tire)</div>
+                            <div class="value">${avgDuration ? avgDuration.toFixed(3) + 's' : 'N/A'}</div>
+                        </div>
+                        <div class="pit-stat-card">
+                            <div class="label">Most Positions Gained</div>
+                            <div class="value" style="color: #4caf50;">+${maxGained.positions_gained_lost}</div>
+                            <div class="driver">#${maxGained.vehicle_number} ${maxGained.driver_name}</div>
+                        </div>
+                        <div class="pit-stat-card">
+                            <div class="label">Most Positions Lost</div>
+                            <div class="value" style="color: #f44336;">${maxLost.positions_gained_lost}</div>
+                            <div class="driver">#${maxLost.vehicle_number} ${maxLost.driver_name}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Driver Pit Stop Averages</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="number">#</th>
+                                <th class="sortable" data-sort="driver">Driver</th>
+                                <th class="sortable" data-sort="manufacturer">Mfr</th>
+                                <th class="sortable" data-sort="stops">Stops</th>
+                                <th class="sortable" data-sort="avgTotal">Avg Total</th>
+                                <th class="sortable" data-sort="avgPit">Avg Pit Stop</th>
+                                <th class="sortable" data-sort="avgIn">Avg In Travel</th>
+                                <th class="sortable" data-sort="avgOut">Avg Out Travel</th>
+                                <th class="sortable" data-sort="netPositions">Net Positions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.values(driverStats)
+                                .sort((a, b) => a.avgPitStop - b.avgPitStop)
+                                .map(d => `
+                                    <tr>
+                                        <td>${d.number}</td>
+                                        <td>${d.driver}</td>
+                                        <td>${d.manufacturer}</td>
+                                        <td>${d.stops}</td>
+                                        <td>${d.avgTotal.toFixed(3)}s</td>
+                                        <td>${d.avgPitStop.toFixed(3)}s</td>
+                                        <td>${d.avgInTravel.toFixed(3)}s</td>
+                                        <td>${d.avgOutTravel.toFixed(3)}s</td>
+                                        <td class="position-change ${d.netPositions > 0 ? 'gained' : d.netPositions < 0 ? 'lost' : 'neutral'}">
+                                            ${d.netPositions > 0 ? '+' : ''}${d.netPositions}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            setupTableSorting(container);
+        }
+
+        function renderAllStops(container) {
+            // Sort by lap/race time
+            const sortedStops = [...pitData].sort((a, b) => a.pit_in_race_time - b.pit_in_race_time);
+
+            container.innerHTML = `
+                <div class="panel">
+                    <h3>All Pit Stops (${pitData.length} total)</h3>
+                    <div class="filter-row">
+                        <label>Filter by Driver:</label>
+                        <select id="driverFilter">
+                            <option value="">All Drivers</option>
+                            ${[...new Set(pitData.map(p => p.vehicle_number))]
+                                .sort((a, b) => parseInt(a) - parseInt(b))
+                                .map(num => {
+                                    const p = pitData.find(x => x.vehicle_number === num);
+                                    return `<option value="${num}">#${num} ${p.driver_name}</option>`;
+                                }).join('')}
+                        </select>
+                        <label>Filter by Stop Type:</label>
+                        <select id="typeFilter">
+                            <option value="">All Types</option>
+                            <option value="FOUR_WHEEL_CHANGE">4-Tire Change</option>
+                            <option value="TWO_WHEEL_CHANGE_LEFT">2-Tire Left</option>
+                            <option value="TWO_WHEEL_CHANGE_RIGHT">2-Tire Right</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <table id="stopsTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="lap">Lap</th>
+                                <th class="sortable" data-sort="number">#</th>
+                                <th class="sortable" data-sort="driver">Driver</th>
+                                <th>Tires</th>
+                                <th>Type</th>
+                                <th class="sortable" data-sort="total">Total</th>
+                                <th class="sortable" data-sort="pitStop">Pit Stop</th>
+                                <th class="sortable" data-sort="inTravel">In Travel</th>
+                                <th class="sortable" data-sort="outTravel">Out Travel</th>
+                                <th class="sortable" data-sort="pitIn">Pit In Rank</th>
+                                <th class="sortable" data-sort="pitOut">Pit Out Rank</th>
+                                <th class="sortable" data-sort="change">+/-</th>
+                                <th>Flag In</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedStops.map(p => renderPitStopRow(p)).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Setup filters
+            document.getElementById('driverFilter').addEventListener('change', filterStopsTable);
+            document.getElementById('typeFilter').addEventListener('change', filterStopsTable);
+            setupTableSorting(container);
+        }
+
+        function renderPitStopRow(p) {
+            const avgDuration = pitData
+                .filter(x => x.pit_stop_type === 'FOUR_WHEEL_CHANGE' && x.pit_stop_duration > 0)
+                .reduce((sum, x) => sum + x.pit_stop_duration, 0) / 
+                pitData.filter(x => x.pit_stop_type === 'FOUR_WHEEL_CHANGE' && x.pit_stop_duration > 0).length || 12;
+            
+            const speedClass = p.pit_stop_duration < avgDuration - 1 ? 'fast' : 
+                              p.pit_stop_duration > avgDuration + 2 ? 'slow' : 'medium';
+
+            return `
+                <tr data-driver="${p.vehicle_number}" data-type="${p.pit_stop_type}">
+                    <td>${p.leader_lap}</td>
+                    <td>${p.vehicle_number}</td>
+                    <td>${p.driver_name}</td>
+                    <td>
+                        <div class="tire-indicator">
+                            <span class="tire ${p.left_front_tire_changed ? 'changed' : 'not-changed'}" title="Left Front">LF</span>
+                            <span class="tire ${p.right_front_tire_changed ? 'changed' : 'not-changed'}" title="Right Front">RF</span>
+                            <span class="tire ${p.left_rear_tire_changed ? 'changed' : 'not-changed'}" title="Left Rear">LR</span>
+                            <span class="tire ${p.right_rear_tire_changed ? 'changed' : 'not-changed'}" title="Right Rear">RR</span>
+                        </div>
+                    </td>
+                    <td><span class="pit-stop-type ${getPitStopTypeClass(p.pit_stop_type)}">${formatPitStopType(p.pit_stop_type)}</span></td>
+                    <td>${p.total_duration.toFixed(3)}s</td>
+                    <td>
+                        ${p.pit_stop_duration.toFixed(3)}s
+                        <div class="duration-bar">
+                            <div class="duration-bar-fill ${speedClass}" style="width: ${Math.min(100, (p.pit_stop_duration / 20) * 100)}%"></div>
+                        </div>
+                    </td>
+                    <td>${p.in_travel_duration.toFixed(3)}s</td>
+                    <td>${p.out_travel_duration.toFixed(3)}s</td>
+                    <td>${p.pit_in_rank}</td>
+                    <td>${p.pit_out_rank}</td>
+                    <td class="position-change ${p.positions_gained_lost > 0 ? 'gained' : p.positions_gained_lost < 0 ? 'lost' : 'neutral'}">
+                        ${p.positions_gained_lost > 0 ? '+' : ''}${p.positions_gained_lost}
+                    </td>
+                    <td><span class="flag-indicator ${getFlagClass(p.pit_in_flag_status)}">${getFlagName(p.pit_in_flag_status)}</span></td>
+                </tr>
+            `;
+        }
+
+        function filterStopsTable() {
+            const driverFilter = document.getElementById('driverFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            
+            document.querySelectorAll('#stopsTable tbody tr').forEach(row => {
+                const matchDriver = !driverFilter || row.dataset.driver === driverFilter;
+                const matchType = !typeFilter || row.dataset.type === typeFilter;
+                row.style.display = matchDriver && matchType ? '' : 'none';
+            });
+        }
+
+        function renderLeaderboards(container) {
+            const driverStats = aggregateDriverStats();
+            const statsArray = Object.values(driverStats).filter(d => d.fourTireStops > 0);
+
+            // Sort for different categories
+            const fastestAvgPit = [...statsArray].sort((a, b) => a.avgPitStop - b.avgPitStop).slice(0, 5);
+            const fastestAvgTotal = [...statsArray].sort((a, b) => a.avgTotal - b.avgTotal).slice(0, 5);
+            const fastestInTravel = [...statsArray].sort((a, b) => a.avgInTravel - b.avgInTravel).slice(0, 5);
+            const fastestOutTravel = [...statsArray].sort((a, b) => a.avgOutTravel - b.avgOutTravel).slice(0, 5);
+            const mostStops = [...statsArray].sort((a, b) => b.stops - a.stops).slice(0, 5);
+            const bestPositions = [...statsArray].sort((a, b) => b.netPositions - a.netPositions).slice(0, 5);
+            const worstPositions = [...statsArray].sort((a, b) => a.netPositions - b.netPositions).slice(0, 5);
+
+            // Find single best stops
+            const fourTireStops = pitData.filter(p => p.pit_stop_type === 'FOUR_WHEEL_CHANGE' && p.pit_stop_duration > 0);
+            const fastestSingleStops = [...fourTireStops].sort((a, b) => a.pit_stop_duration - b.pit_stop_duration).slice(0, 5);
+
+            container.innerHTML = `
+                <div class="panel">
+                    <h3>Pit Stop Leaderboards</h3>
+                    <div class="leaderboard-grid">
+                        <div class="leaderboard-card">
+                            <h4>🏆 Fastest Avg Pit Stop Time</h4>
+                            ${fastestAvgPit.map((d, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${d.number} ${d.driver}</span>
+                                    <span class="value">${d.avgPitStop.toFixed(3)}s</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="leaderboard-card">
+                            <h4>⚡ Fastest Single Pit Stop</h4>
+                            ${fastestSingleStops.map((p, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${p.vehicle_number} ${p.driver_name}</span>
+                                    <span class="value">${p.pit_stop_duration.toFixed(3)}s</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="leaderboard-card">
+                            <h4>🚗 Fastest Avg Total Duration</h4>
+                            ${fastestAvgTotal.map((d, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${d.number} ${d.driver}</span>
+                                    <span class="value">${d.avgTotal.toFixed(3)}s</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="leaderboard-card">
+                            <h4>⬇️ Fastest Avg In-Travel</h4>
+                            ${fastestInTravel.map((d, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${d.number} ${d.driver}</span>
+                                    <span class="value">${d.avgInTravel.toFixed(3)}s</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="leaderboard-card">
+                            <h4>⬆️ Fastest Avg Out-Travel</h4>
+                            ${fastestOutTravel.map((d, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${d.number} ${d.driver}</span>
+                                    <span class="value">${d.avgOutTravel.toFixed(3)}s</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="leaderboard-card">
+                            <h4>📈 Best Net Position Change</h4>
+                            ${bestPositions.map((d, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${d.number} ${d.driver}</span>
+                                    <span class="value" style="color: ${d.netPositions >= 0 ? '#4caf50' : '#f44336'}">
+                                        ${d.netPositions > 0 ? '+' : ''}${d.netPositions}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="leaderboard-card">
+                            <h4>📉 Worst Net Position Change</h4>
+                            ${worstPositions.map((d, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${d.number} ${d.driver}</span>
+                                    <span class="value" style="color: ${d.netPositions >= 0 ? '#4caf50' : '#f44336'}">
+                                        ${d.netPositions > 0 ? '+' : ''}${d.netPositions}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="leaderboard-card">
+                            <h4>🔧 Most Pit Stops</h4>
+                            ${mostStops.map((d, i) => `
+                                <div class="leaderboard-item">
+                                    <span class="rank">${i + 1}.</span>
+                                    <span class="name">#${d.number} ${d.driver}</span>
+                                    <span class="value">${d.stops}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDriverDetail(container) {
+            const drivers = [...new Set(pitData.map(p => p.vehicle_number))]
+                .sort((a, b) => parseInt(a) - parseInt(b));
+
+            container.innerHTML = `
+                <div class="panel">
+                    <h3>Driver Pit Stop Detail</h3>
+                    <div class="filter-row">
+                        <label>Select Driver:</label>
+                        <select id="detailDriverSelect">
+                            ${drivers.map(num => {
+                                const p = pitData.find(x => x.vehicle_number === num);
+                                return `<option value="${num}">#${num} ${p.driver_name}</option>`;
+                            }).join('')}
+                        </select>
+                    </div>
+                    <div id="driverDetailContent"></div>
+                </div>
+            `;
+
+            document.getElementById('detailDriverSelect').addEventListener('change', updateDriverDetail);
+            updateDriverDetail();
+        }
+
+        function updateDriverDetail() {
+            const driverNum = document.getElementById('detailDriverSelect').value;
+            const driverStops = pitData.filter(p => p.vehicle_number === driverNum)
+                .sort((a, b) => a.pit_in_race_time - b.pit_in_race_time);
+
+            if (driverStops.length === 0) return;
+
+            const driver = driverStops[0];
+            const fourTireStops = driverStops.filter(p => p.pit_stop_type === 'FOUR_WHEEL_CHANGE' && p.pit_stop_duration > 0);
+            
+            const avgPitStop = fourTireStops.length > 0 
+                ? fourTireStops.reduce((sum, p) => sum + p.pit_stop_duration, 0) / fourTireStops.length 
+                : 0;
+            const avgTotal = fourTireStops.length > 0
+                ? fourTireStops.reduce((sum, p) => sum + p.total_duration, 0) / fourTireStops.length
+                : 0;
+            const netPositions = driverStops.reduce((sum, p) => sum + p.positions_gained_lost, 0);
+            const bestStop = fourTireStops.length > 0
+                ? fourTireStops.reduce((a, b) => a.pit_stop_duration < b.pit_stop_duration ? a : b)
+                : null;
+            const worstStop = fourTireStops.length > 0
+                ? fourTireStops.reduce((a, b) => a.pit_stop_duration > b.pit_stop_duration ? a : b)
+                : null;
+
+            const content = document.getElementById('driverDetailContent');
+            content.innerHTML = `
+                <div class="pit-stats-grid">
+                    <div class="pit-stat-card">
+                        <div class="label">Driver</div>
+                        <div class="value">#${driver.vehicle_number}</div>
+                        <div class="driver">${driver.driver_name}</div>
+                    </div>
+                    <div class="pit-stat-card">
+                        <div class="label">Manufacturer</div>
+                        <div class="value">${driver.vehicle_manufacturer}</div>
+                    </div>
+                    <div class="pit-stat-card">
+                        <div class="label">Total Stops</div>
+                        <div class="value">${driverStops.length}</div>
+                    </div>
+                    <div class="pit-stat-card">
+                        <div class="label">Avg Pit Stop (4-Tire)</div>
+                        <div class="value">${avgPitStop ? avgPitStop.toFixed(3) + 's' : 'N/A'}</div>
+                    </div>
+                    <div class="pit-stat-card">
+                        <div class="label">Avg Total Duration</div>
+                        <div class="value">${avgTotal ? avgTotal.toFixed(3) + 's' : 'N/A'}</div>
+                    </div>
+                    <div class="pit-stat-card">
+                        <div class="label">Best Stop</div>
+                        <div class="value">${bestStop ? bestStop.pit_stop_duration.toFixed(3) + 's' : 'N/A'}</div>
+                        <div class="driver">${bestStop ? `Lap ${bestStop.leader_lap}` : ''}</div>
+                    </div>
+                    <div class="pit-stat-card">
+                        <div class="label">Worst Stop</div>
+                        <div class="value">${worstStop ? worstStop.pit_stop_duration.toFixed(3) + 's' : 'N/A'}</div>
+                        <div class="driver">${worstStop ? `Lap ${worstStop.leader_lap}` : ''}</div>
+                    </div>
+                    <div class="pit-stat-card">
+                        <div class="label">Net Position Change</div>
+                        <div class="value" style="color: ${netPositions > 0 ? '#4caf50' : netPositions < 0 ? '#f44336' : '#888'}">
+                            ${netPositions > 0 ? '+' : ''}${netPositions}
+                        </div>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 20px;">Pit Stop History</h4>
+                <div class="driver-pit-history">
+                    ${driverStops.map((p, idx) => `
+                        <div class="pit-stop-card">
+                            <div class="pit-stop-card-header">
+                                <div>
+                                    <span class="lap">Stop #${idx + 1} - Lap ${p.leader_lap}</span>
+                                    <span class="flag-indicator ${getFlagClass(p.pit_in_flag_status)}" style="margin-left: 10px;">${getFlagName(p.pit_in_flag_status)}</span>
+                                </div>
+                                <span class="pit-stop-type ${getPitStopTypeClass(p.pit_stop_type)}">${formatPitStopType(p.pit_stop_type)}</span>
+                            </div>
+                            <div class="pit-stop-details">
+                                <div class="pit-stop-detail">
+                                    <div class="label">Total Duration</div>
+                                    <div class="value">${p.total_duration.toFixed(3)}s</div>
+                                </div>
+                                <div class="pit-stop-detail">
+                                    <div class="label">Pit Stop Time</div>
+                                    <div class="value">${p.pit_stop_duration.toFixed(3)}s</div>
+                                </div>
+                                <div class="pit-stop-detail">
+                                    <div class="label">In Travel</div>
+                                    <div class="value">${p.in_travel_duration.toFixed(3)}s</div>
+                                </div>
+                                <div class="pit-stop-detail">
+                                    <div class="label">Out Travel</div>
+                                    <div class="value">${p.out_travel_duration.toFixed(3)}s</div>
+                                </div>
+                                <div class="pit-stop-detail">
+                                    <div class="label">Position In/Out</div>
+                                    <div class="value">P${p.pit_in_rank} → P${p.pit_out_rank}</div>
+                                </div>
+                                <div class="pit-stop-detail">
+                                    <div class="label">Change</div>
+                                    <div class="value position-change ${p.positions_gained_lost > 0 ? 'gained' : p.positions_gained_lost < 0 ? 'lost' : 'neutral'}">
+                                        ${p.positions_gained_lost > 0 ? '+' : ''}${p.positions_gained_lost}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <span style="color: #888; font-size: 12px;">Tires Changed:</span>
+                                <div class="tire-indicator">
+                                    <span class="tire ${p.left_front_tire_changed ? 'changed' : 'not-changed'}" title="Left Front">LF</span>
+                                    <span class="tire ${p.right_front_tire_changed ? 'changed' : 'not-changed'}" title="Right Front">RF</span>
+                                    <span class="tire ${p.left_rear_tire_changed ? 'changed' : 'not-changed'}" title="Left Rear">LR</span>
+                                    <span class="tire ${p.right_rear_tire_changed ? 'changed' : 'not-changed'}" title="Right Rear">RR</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Helper functions
+        function aggregateDriverStats() {
+            const stats = {};
+
+            pitData.forEach(p => {
+                if (!stats[p.vehicle_number]) {
+                    stats[p.vehicle_number] = {
+                        number: p.vehicle_number,
+                        driver: p.driver_name,
+                        manufacturer: p.vehicle_manufacturer,
+                        stops: 0,
+                        fourTireStops: 0,
+                        totalDuration: 0,
+                        totalPitStop: 0,
+                        totalInTravel: 0,
+                        totalOutTravel: 0,
+                        netPositions: 0
+                    };
+                }
+
+                const s = stats[p.vehicle_number];
+                s.stops++;
+                s.netPositions += p.positions_gained_lost;
+
+                if (p.pit_stop_type === 'FOUR_WHEEL_CHANGE' && p.pit_stop_duration > 0) {
+                    s.fourTireStops++;
+                    s.totalDuration += p.total_duration;
+                    s.totalPitStop += p.pit_stop_duration;
+                    s.totalInTravel += p.in_travel_duration;
+                    s.totalOutTravel += p.out_travel_duration;
+                }
+            });
+
+            // Calculate averages
+            Object.values(stats).forEach(s => {
+                if (s.fourTireStops > 0) {
+                    s.avgTotal = s.totalDuration / s.fourTireStops;
+                    s.avgPitStop = s.totalPitStop / s.fourTireStops;
+                    s.avgInTravel = s.totalInTravel / s.fourTireStops;
+                    s.avgOutTravel = s.totalOutTravel / s.fourTireStops;
+                } else {
+                    s.avgTotal = 999;
+                    s.avgPitStop = 999;
+                    s.avgInTravel = 999;
+                    s.avgOutTravel = 999;
+                }
+            });
+
+            return stats;
+        }
+
+        function getPitStopTypeClass(type) {
+            switch (type) {
+                case 'FOUR_WHEEL_CHANGE': return 'four-wheel';
+                case 'TWO_WHEEL_CHANGE_LEFT': return 'two-wheel-left';
+                case 'TWO_WHEEL_CHANGE_RIGHT': return 'two-wheel-right';
+                default: return 'other';
+            }
+        }
+
+        function formatPitStopType(type) {
+            switch (type) {
+                case 'FOUR_WHEEL_CHANGE': return '4-Tire';
+                case 'TWO_WHEEL_CHANGE_LEFT': return '2-Tire L';
+                case 'TWO_WHEEL_CHANGE_RIGHT': return '2-Tire R';
+                case 'FUEL_ONLY': return 'Fuel';
+                default: return 'Other';
+            }
+        }
+
+        function getFlagClass(status) {
+            switch (status) {
+                case 1: return 'green';
+                case 2: return 'yellow';
+                case 4: return 'red';
+                case 9: return 'checkered';
+                default: return 'green';
+            }
+        }
+
+        function getFlagName(status) {
+            switch (status) {
+                case 1: return 'Green';
+                case 2: return 'Yellow';
+                case 4: return 'Red';
+                case 9: return 'Checkered';
+                default: return 'Unknown';
+            }
+        }
+
+        function setupTableSorting(container) {
+            container.querySelectorAll('.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    const table = th.closest('table');
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    const sortKey = th.dataset.sort;
+                    const isAsc = th.classList.contains('sort-asc');
+
+                    // Reset all headers
+                    table.querySelectorAll('.sortable').forEach(h => {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                    });
+
+                    th.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
+
+                    rows.sort((a, b) => {
+                        let aVal, bVal;
+                        const cells = {
+                            number: 0, driver: 1, manufacturer: 2, stops: 3,
+                            avgTotal: 4, avgPit: 5, avgIn: 6, avgOut: 7, netPositions: 8,
+                            lap: 0, total: 5, pitStop: 6, inTravel: 7, outTravel: 8,
+                            pitIn: 9, pitOut: 10, change: 11
+                        };
+
+                        const idx = cells[sortKey] || 0;
+                        aVal = a.cells[idx]?.textContent.replace(/[+s]/g, '').trim() || '';
+                        bVal = b.cells[idx]?.textContent.replace(/[+s]/g, '').trim() || '';
+
+                        const aNum = parseFloat(aVal);
+                        const bNum = parseFloat(bVal);
+
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            return isAsc ? bNum - aNum : aNum - bNum;
+                        }
+                        return isAsc ? bVal.localeCompare(aVal) : aVal.localeCompare(bVal);
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        }
+    </script>
+</body>
+</html>
