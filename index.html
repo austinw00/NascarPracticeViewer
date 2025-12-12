@@ -512,6 +512,283 @@
             background: rgba(57, 255, 20, 0.1);
         }
 
+        /* View Tabs */
+        .view-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 25px;
+            padding: 5px;
+            background: rgba(57, 255, 20, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+        }
+
+        .view-tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .view-tab:hover {
+            color: #ccc;
+            background: rgba(57, 255, 20, 0.05);
+        }
+
+        .view-tab.active {
+            background: rgba(57, 255, 20, 0.1);
+            border-color: rgba(57, 255, 20, 0.3);
+            color: #39ff14;
+        }
+
+        .view-content {
+            display: none;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        /* Heatmap View */
+        .heatmap-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+
+        .heatmap-table {
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+
+        .heatmap-table th {
+            background: #0d0d14;
+            color: #39ff14;
+            padding: 6px 4px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            min-width: 20px;
+            font-size: 0.65rem;
+        }
+
+        .heatmap-table th.driver-header {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            text-align: left;
+            min-width: 140px;
+            background: #0d0d14;
+        }
+
+        .heatmap-table th.avg-header {
+            background: #1a1a24;
+            color: #fff;
+            min-width: 50px;
+        }
+
+        .heatmap-table td {
+            padding: 4px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            font-family: 'Consolas', monospace;
+        }
+
+        .heatmap-table td.driver-cell {
+            position: sticky;
+            left: 0;
+            background: #0d0d14;
+            text-align: left;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        .heatmap-table td.avg-cell {
+            background: rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        .heatmap-table td.lap-cell {
+            min-width: 20px;
+            max-width: 20px;
+            height: 20px;
+            cursor: default;
+            padding: 0;
+        }
+
+        .heatmap-table tr:hover td.driver-cell {
+            background: #1a1a24;
+        }
+
+        .lap-time-cell {
+            border-radius: 2px;
+            padding: 3px 2px;
+        }
+
+        /* Color legend */
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .legend-title {
+            color: #666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .legend-scale {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-bar {
+            width: 150px;
+            height: 12px;
+            background: linear-gradient(90deg, #00ff00, #88ff00, #ffff00, #ff8800, #ff0000);
+            border-radius: 3px;
+        }
+
+        .legend-label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .heatmap-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sort-controls label {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .sort-controls select {
+            background: #0d0d14;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            color: #ccc;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        /* Averages Table */
+        .averages-panel {
+            margin-bottom: 25px;
+        }
+
+        .averages-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .averages-table th {
+            text-align: left;
+            padding: 10px 8px;
+            color: #39ff14;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid rgba(57, 255, 20, 0.3);
+            background: #0d0d14;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .averages-table th.avg-col {
+            text-align: center;
+            background: linear-gradient(180deg, rgba(57, 255, 20, 0.1), transparent);
+        }
+
+        .averages-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.85rem;
+        }
+
+        .averages-table td.avg-value {
+            text-align: center;
+            font-family: 'Consolas', monospace;
+            font-weight: 500;
+        }
+
+        .averages-table tr:hover {
+            background: rgba(57, 255, 20, 0.03);
+        }
+
+        .avg-best {
+            color: #39ff14;
+            font-weight: 700;
+        }
+
+        .avg-good {
+            color: #88ff44;
+        }
+
+        .avg-mid {
+            color: #ffcc00;
+        }
+
+        .avg-slow {
+            color: #ff6644;
+        }
+
+        .no-data {
+            color: #333;
+        }
+
+        .averages-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .averages-table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .averages-table-container::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+
+        .averages-table-container::-webkit-scrollbar-thumb {
+            background: #39ff14;
+            border-radius: 3px;
+        }
+
         footer {
             text-align: center;
             padding: 20px;
@@ -598,7 +875,16 @@
             </div>
         </div>
 
-        <div class="dashboard">
+        <!-- View Tabs -->
+        <div class="view-tabs">
+            <button class="view-tab active" data-view="standings">Standings View</button>
+            <button class="view-tab" data-view="averages">Lap Averages</button>
+            <button class="view-tab" data-view="heatmap">Lap Heatmap</button>
+        </div>
+
+        <!-- Standings View (Original) -->
+        <div class="view-content active" id="standings-view">
+            <div class="dashboard">
             <div class="panel">
                 <h2 class="panel-title">Practice Standings</h2>
                 <p class="click-hint">Click a driver to lock their stats • Click again to unlock</p>
@@ -656,6 +942,69 @@
                 </div>
                 <div class="chart-container" id="chartContainer" style="display: none;">
                     <canvas id="lapChart"></canvas>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Lap Averages View -->
+        <div class="view-content" id="averages-view">
+            <div class="panel averages-panel">
+                <h2 class="panel-title">Rolling Lap Averages</h2>
+                <p style="color: #555; font-size: 0.8rem; margin-bottom: 15px;">
+                    Shows the average of the last N laps for each driver. Lower is better. Sorted by best 10-lap average.
+                </p>
+                <div class="averages-table-container">
+                    <table class="averages-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">Pos</th>
+                                <th>Driver</th>
+                                <th>Best Lap</th>
+                                <th class="avg-col">Last 5 Avg</th>
+                                <th class="avg-col">Last 10 Avg</th>
+                                <th class="avg-col">Last 15 Avg</th>
+                                <th class="avg-col">Last 20 Avg</th>
+                                <th>Laps</th>
+                            </tr>
+                        </thead>
+                        <tbody id="averagesTableBody">
+                            <tr><td colspan="8" style="color: #666; text-align: center; padding: 40px;">
+                                Select a race to view lap averages
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heatmap View -->
+        <div class="view-content" id="heatmap-view">
+            <div class="panel">
+                <h2 class="panel-title">Lap Time Heatmap</h2>
+                <div class="heatmap-controls">
+                    <div class="heatmap-legend">
+                        <span class="legend-title">Lap Time:</span>
+                        <div class="legend-scale">
+                            <span class="legend-label">Fastest</span>
+                            <div class="legend-bar"></div>
+                            <span class="legend-label">Slowest</span>
+                        </div>
+                    </div>
+                    <div class="sort-controls">
+                        <label>Sort by:</label>
+                        <select id="heatmapSort">
+                            <option value="position">Position</option>
+                            <option value="best">Best Lap</option>
+                            <option value="avg10">10-Lap Avg</option>
+                            <option value="laps">Total Laps</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="heatmap-container" id="heatmapContainer">
+                    <p style="color: #666; text-align: center; padding: 40px;">
+                        Select a race to view the lap heatmap
+                    </p>
                 </div>
             </div>
         </div>
@@ -861,6 +1210,10 @@
             document.getElementById('topSpeed').textContent = allSpeeds.length > 0 ? 
                 Math.max(...allSpeeds).toFixed(1) : '--';
             document.getElementById('activeDrivers').textContent = practiceData.length;
+
+            // Render all views
+            renderAveragesTable();
+            renderHeatmap();
         }
 
         function renderTable() {
@@ -1052,6 +1405,256 @@
 
         // Load data on page load
         loadRaceList(); // Load initial race list for selected year
+
+        // Tab switching
+        document.querySelectorAll('.view-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const viewId = tab.dataset.view;
+                
+                // Update tab states
+                document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Update view states
+                document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+                document.getElementById(`${viewId}-view`).classList.add('active');
+                
+                // Render view-specific content if data is loaded
+                if (practiceData.length > 0) {
+                    if (viewId === 'averages') {
+                        renderAveragesTable();
+                    } else if (viewId === 'heatmap') {
+                        renderHeatmap();
+                    }
+                }
+            });
+        });
+
+        // Heatmap sort change
+        document.getElementById('heatmapSort').addEventListener('change', () => {
+            if (practiceData.length > 0) {
+                renderHeatmap();
+            }
+        });
+
+        // Calculate rolling averages for a driver
+        function calculateAverages(driver) {
+            const laps = driver.lapTimes;
+            const result = {
+                avg5: null,
+                avg10: null,
+                avg15: null,
+                avg20: null
+            };
+
+            if (laps.length >= 5) {
+                const last5 = laps.slice(-5);
+                result.avg5 = last5.reduce((a, b) => a + b, 0) / 5;
+            }
+            if (laps.length >= 10) {
+                const last10 = laps.slice(-10);
+                result.avg10 = last10.reduce((a, b) => a + b, 0) / 10;
+            }
+            if (laps.length >= 15) {
+                const last15 = laps.slice(-15);
+                result.avg15 = last15.reduce((a, b) => a + b, 0) / 15;
+            }
+            if (laps.length >= 20) {
+                const last20 = laps.slice(-20);
+                result.avg20 = last20.reduce((a, b) => a + b, 0) / 20;
+            }
+
+            return result;
+        }
+
+        // Render averages table
+        function renderAveragesTable() {
+            const tableBody = document.getElementById('averagesTableBody');
+            
+            // Calculate averages for all drivers
+            const driversWithAvgs = practiceData.map(driver => ({
+                ...driver,
+                averages: calculateAverages(driver)
+            }));
+
+            // Sort by 10-lap average (or 5-lap if no 10-lap, or best lap if neither)
+            driversWithAvgs.sort((a, b) => {
+                const aVal = a.averages.avg10 || a.averages.avg5 || parseFloat(a.bestLap) || 999;
+                const bVal = b.averages.avg10 || b.averages.avg5 || parseFloat(b.bestLap) || 999;
+                return aVal - bVal;
+            });
+
+            // Find best values for highlighting
+            const allAvg5 = driversWithAvgs.filter(d => d.averages.avg5).map(d => d.averages.avg5);
+            const allAvg10 = driversWithAvgs.filter(d => d.averages.avg10).map(d => d.averages.avg10);
+            const allAvg15 = driversWithAvgs.filter(d => d.averages.avg15).map(d => d.averages.avg15);
+            const allAvg20 = driversWithAvgs.filter(d => d.averages.avg20).map(d => d.averages.avg20);
+
+            const bestAvg5 = allAvg5.length > 0 ? Math.min(...allAvg5) : null;
+            const bestAvg10 = allAvg10.length > 0 ? Math.min(...allAvg10) : null;
+            const bestAvg15 = allAvg15.length > 0 ? Math.min(...allAvg15) : null;
+            const bestAvg20 = allAvg20.length > 0 ? Math.min(...allAvg20) : null;
+
+            tableBody.innerHTML = '';
+
+            driversWithAvgs.forEach((driver, index) => {
+                const row = document.createElement('tr');
+                const avgs = driver.averages;
+
+                const getAvgClass = (val, bestVal, allVals) => {
+                    if (val === null) return 'no-data';
+                    if (val === bestVal) return 'avg-best';
+                    const range = Math.max(...allVals) - Math.min(...allVals);
+                    const threshold = (val - bestVal) / range;
+                    if (threshold < 0.25) return 'avg-good';
+                    if (threshold < 0.5) return 'avg-mid';
+                    return 'avg-slow';
+                };
+
+                row.innerHTML = `
+                    <td class="position ${index < 3 ? 'top3' : ''}">${index + 1}</td>
+                    <td class="driver-name">
+                        <span class="car-number">${driver.number}</span>
+                        ${driver.name}
+                    </td>
+                    <td class="best-lap">${driver.bestLap}</td>
+                    <td class="avg-value ${getAvgClass(avgs.avg5, bestAvg5, allAvg5)}">
+                        ${avgs.avg5 ? avgs.avg5.toFixed(3) : '--'}
+                    </td>
+                    <td class="avg-value ${getAvgClass(avgs.avg10, bestAvg10, allAvg10)}">
+                        ${avgs.avg10 ? avgs.avg10.toFixed(3) : '--'}
+                    </td>
+                    <td class="avg-value ${getAvgClass(avgs.avg15, bestAvg15, allAvg15)}">
+                        ${avgs.avg15 ? avgs.avg15.toFixed(3) : '--'}
+                    </td>
+                    <td class="avg-value ${getAvgClass(avgs.avg20, bestAvg20, allAvg20)}">
+                        ${avgs.avg20 ? avgs.avg20.toFixed(3) : '--'}
+                    </td>
+                    <td>${driver.totalLaps}</td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Get color for lap time (green=fast, yellow=medium, red=slow)
+        function getLapTimeColor(lapTime, minTime, maxTime) {
+            if (!lapTime || !minTime || !maxTime) return 'transparent';
+            
+            const range = maxTime - minTime;
+            if (range === 0) return 'rgb(0, 255, 0)';
+            
+            const normalized = (lapTime - minTime) / range;
+            
+            // Green (0,255,0) -> Yellow (255,255,0) -> Red (255,0,0)
+            let r, g, b;
+            if (normalized < 0.5) {
+                // Green to Yellow
+                const t = normalized * 2;
+                r = Math.round(255 * t);
+                g = 255;
+                b = 0;
+            } else {
+                // Yellow to Red
+                const t = (normalized - 0.5) * 2;
+                r = 255;
+                g = Math.round(255 * (1 - t));
+                b = 0;
+            }
+            
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // Render heatmap
+        function renderHeatmap() {
+            const container = document.getElementById('heatmapContainer');
+            const sortBy = document.getElementById('heatmapSort').value;
+
+            // Calculate averages for sorting
+            const driversWithAvgs = practiceData.map(driver => ({
+                ...driver,
+                averages: calculateAverages(driver)
+            }));
+
+            // Sort drivers based on selection
+            let sortedDrivers = [...driversWithAvgs];
+            switch (sortBy) {
+                case 'best':
+                    sortedDrivers.sort((a, b) => parseFloat(a.bestLap) - parseFloat(b.bestLap));
+                    break;
+                case 'avg10':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = a.averages.avg10 || a.averages.avg5 || parseFloat(a.bestLap) || 999;
+                        const bVal = b.averages.avg10 || b.averages.avg5 || parseFloat(b.bestLap) || 999;
+                        return aVal - bVal;
+                    });
+                    break;
+                case 'laps':
+                    sortedDrivers.sort((a, b) => b.totalLaps - a.totalLaps);
+                    break;
+                default: // position
+                    sortedDrivers.sort((a, b) => a.runningPos - b.runningPos);
+            }
+
+            // Find the maximum lap number across all drivers
+            const maxLapNum = Math.max(...practiceData.flatMap(d => d.lapNumbers), 0);
+            
+            // Find global min/max lap times for color scale
+            const allTimes = practiceData.flatMap(d => d.lapTimes);
+            const minTime = Math.min(...allTimes);
+            const maxTime = Math.max(...allTimes);
+
+            // Build table HTML
+            let html = '<table class="heatmap-table"><thead><tr>';
+            html += '<th class="driver-header">Driver</th>';
+            html += '<th class="avg-header">5-Lap</th>';
+            html += '<th class="avg-header">10-Lap</th>';
+            html += '<th class="avg-header">15-Lap</th>';
+            html += '<th class="avg-header">20-Lap</th>';
+            
+            // Add lap number headers
+            for (let i = 1; i <= maxLapNum; i++) {
+                html += `<th>${i}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            // Add rows for each driver
+            sortedDrivers.forEach(driver => {
+                html += '<tr>';
+                html += `<td class="driver-cell"><span class="car-number">${driver.number}</span> ${driver.name}</td>`;
+                
+                // Add average cells
+                const avgs = driver.averages;
+                html += `<td class="avg-cell" style="color: ${avgs.avg5 ? getLapTimeColor(avgs.avg5, minTime, maxTime) : '#333'}">${avgs.avg5 ? avgs.avg5.toFixed(3) : '--'}</td>`;
+                html += `<td class="avg-cell" style="color: ${avgs.avg10 ? getLapTimeColor(avgs.avg10, minTime, maxTime) : '#333'}">${avgs.avg10 ? avgs.avg10.toFixed(3) : '--'}</td>`;
+                html += `<td class="avg-cell" style="color: ${avgs.avg15 ? getLapTimeColor(avgs.avg15, minTime, maxTime) : '#333'}">${avgs.avg15 ? avgs.avg15.toFixed(3) : '--'}</td>`;
+                html += `<td class="avg-cell" style="color: ${avgs.avg20 ? getLapTimeColor(avgs.avg20, minTime, maxTime) : '#333'}">${avgs.avg20 ? avgs.avg20.toFixed(3) : '--'}</td>`;
+
+                // Create a map of lap number to lap time
+                const lapMap = {};
+                driver.lapNumbers.forEach((lapNum, idx) => {
+                    lapMap[lapNum] = driver.lapTimes[idx];
+                });
+
+                // Add lap cells
+                for (let i = 1; i <= maxLapNum; i++) {
+                    const lapTime = lapMap[i];
+                    if (lapTime) {
+                        const bgColor = getLapTimeColor(lapTime, minTime, maxTime);
+                        // Calculate text color based on background brightness
+                        const normalized = (lapTime - minTime) / (maxTime - minTime);
+                        const textColor = normalized < 0.4 ? '#000' : '#000';
+                        html += `<td class="lap-cell lap-time-cell" style="background-color: ${bgColor}; color: ${textColor};" title="Lap ${i}: ${lapTime.toFixed(3)}s"></td>`;
+                    } else {
+                        html += '<td class="lap-cell"></td>';
+                    }
+                }
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
     </script>
 </body>
 </html>
