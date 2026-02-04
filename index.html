@@ -381,6 +381,180 @@
             background: #39ff14;
             border-radius: 3px;
         }
+
+        /* Advanced TEST View Styles */
+        .advanced-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .advanced-controls-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .advanced-controls-group label {
+            color: #888;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            color: #666;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .toggle-btn:hover {
+            border-color: rgba(57, 255, 20, 0.5);
+            color: #999;
+        }
+
+        .toggle-btn.active {
+            background: rgba(57, 255, 20, 0.15);
+            border-color: #39ff14;
+            color: #39ff14;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #4488ff, #2266dd);
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-left: auto;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(68, 136, 255, 0.3);
+        }
+
+        .export-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .advanced-heatmap-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+
+        .advanced-heatmap-table {
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+
+        .advanced-heatmap-table th {
+            background: #0d0d0d;
+            color: #39ff14;
+            padding: 6px 4px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            min-width: 42px;
+            font-size: 0.65rem;
+        }
+
+        .advanced-heatmap-table th.driver-header {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            text-align: left;
+            min-width: 140px;
+            background: #0d0d0d;
+        }
+
+        .advanced-heatmap-table th.rank-header {
+            background: #1a0a2a;
+            color: #a855f7;
+            min-width: 45px;
+        }
+
+        .advanced-heatmap-table th.avg-header {
+            background: #1a1a1a;
+            color: #fff;
+            min-width: 50px;
+        }
+
+        .advanced-heatmap-table td {
+            padding: 4px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            font-family: 'Consolas', monospace;
+        }
+
+        .advanced-heatmap-table td.driver-cell {
+            position: sticky;
+            left: 0;
+            background: #0d0d0d;
+            text-align: left;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        .advanced-heatmap-table td.rank-cell {
+            background: rgba(168, 85, 247, 0.1);
+            color: #a855f7;
+            font-weight: 600;
+            min-width: 45px;
+        }
+
+        .advanced-heatmap-table td.rank-cell.rank-top3 {
+            color: #39ff14;
+            background: rgba(57, 255, 20, 0.15);
+        }
+
+        .advanced-heatmap-table td.rank-cell.rank-top10 {
+            color: #88ff44;
+            background: rgba(136, 255, 68, 0.1);
+        }
+
+        .advanced-heatmap-table td.avg-cell {
+            background: rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        .advanced-heatmap-table td.lap-cell {
+            min-width: 42px;
+            height: 22px;
+            cursor: default;
+            padding: 2px 1px;
+            font-size: 0.6rem;
+        }
+
+        .advanced-heatmap-table tr:hover td.driver-cell {
+            background: #1a1a1a;
+        }
     </style>
 </head>
 <body>
@@ -478,6 +652,7 @@
             <button class="view-tab" data-view="averages">Lap Averages</button>
             <button class="view-tab" data-view="heatmap">Lap Heatmap</button>
             <button class="view-tab" data-view="compare">Compare Drivers</button>
+            <button class="view-tab" data-view="advanced">Advanced TEST</button>
         </div>
 
         <!-- Standings View (Original) -->
@@ -650,6 +825,42 @@
                 <div class="heatmap-container" id="heatmapContainer">
                     <p style="color: #666; text-align: center; padding: 40px;">
                         Select a race to view the lap heatmap
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced TEST View -->
+        <div class="view-content" id="advanced-view">
+            <div class="panel">
+                <h2 class="panel-title">Advanced TEST</h2>
+                <p style="color: #555; font-size: 0.8rem; margin-bottom: 15px;">
+                    Detailed lap-by-lap analysis with rank-based statistics. Toggle rank columns to see driver rankings for consecutive lap averages.
+                </p>
+                <div class="advanced-controls">
+                    <div class="advanced-controls-group">
+                        <label>Show Avg Ranks:</label>
+                        <button class="toggle-btn" id="toggleRank5" data-rank="5">5 Lap Rank</button>
+                        <button class="toggle-btn" id="toggleRank10" data-rank="10">10 Lap Rank</button>
+                        <button class="toggle-btn" id="toggleRank15" data-rank="15">15 Lap Rank</button>
+                        <button class="toggle-btn" id="toggleRank20" data-rank="20">20 Lap Rank</button>
+                    </div>
+                    <button class="export-btn" id="exportExcelBtn" disabled>📊 Export to Excel</button>
+                </div>
+                <div class="heatmap-controls">
+                    <div class="heatmap-legend">
+                        <span class="legend-title">Lap Time:</span>
+                        <div class="legend-scale">
+                            <span class="legend-label">Fastest</span>
+                            <div class="legend-bar"></div>
+                            <span class="legend-label">Slowest</span>
+                        </div>
+                    </div>
+                    <p style="color: #555; font-size: 0.75rem;">Click column headers to sort</p>
+                </div>
+                <div class="advanced-heatmap-container" id="advancedHeatmapContainer">
+                    <p style="color: #666; text-align: center; padding: 40px;">
+                        Select a race to view advanced practice analytics
                     </p>
                 </div>
             </div>
@@ -948,6 +1159,7 @@
             // Render all views
             renderAveragesTable();
             renderHeatmap();
+            renderAdvancedHeatmap();
             selectedCompareDrivers = []; // Reset compare selection on new data
             updateCompareView();
         }
@@ -1163,6 +1375,8 @@
                         renderHeatmap();
                     } else if (viewId === 'compare') {
                         updateCompareView();
+                    } else if (viewId === 'advanced') {
+                        renderAdvancedHeatmap();
                     }
                 }
             });
@@ -1723,6 +1937,330 @@
             html += '</tbody></table>';
             container.innerHTML = html;
         }
+
+        // Advanced TEST View state
+        let advancedSortColumn = 'avg10';
+        let advancedSortAsc = true;
+        let showRankColumns = {
+            5: false,
+            10: false,
+            15: false,
+            20: false
+        };
+
+        // Toggle rank column buttons
+        document.querySelectorAll('.toggle-btn[data-rank]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const rank = parseInt(btn.dataset.rank);
+                showRankColumns[rank] = !showRankColumns[rank];
+                btn.classList.toggle('active', showRankColumns[rank]);
+                renderAdvancedHeatmap();
+            });
+        });
+
+        // Advanced heatmap header click sorting (delegated)
+        document.getElementById('advancedHeatmapContainer').addEventListener('click', (e) => {
+            const th = e.target.closest('.sortable-advanced');
+            if (!th || practiceData.length === 0) return;
+            
+            const sortKey = th.dataset.sort;
+            if (advancedSortColumn === sortKey) {
+                advancedSortAsc = !advancedSortAsc;
+            } else {
+                advancedSortColumn = sortKey;
+                advancedSortAsc = true;
+            }
+            
+            renderAdvancedHeatmap();
+        });
+
+        // Calculate ranks for all drivers based on N-lap average
+        function calculateRanks(driversWithAvgs, n) {
+            const avgKey = `avg${n}`;
+            const driverAvgs = driversWithAvgs.map((d, idx) => ({
+                idx,
+                avg: d.averages[avgKey]
+            })).filter(d => d.avg !== null);
+            
+            // Sort by average (ascending = better)
+            driverAvgs.sort((a, b) => a.avg - b.avg);
+            
+            // Assign ranks
+            const ranks = {};
+            driverAvgs.forEach((d, rank) => {
+                ranks[d.idx] = rank + 1;
+            });
+            
+            return ranks;
+        }
+
+        // Render Advanced Heatmap
+        function renderAdvancedHeatmap() {
+            const container = document.getElementById('advancedHeatmapContainer');
+            const exportBtn = document.getElementById('exportExcelBtn');
+
+            if (practiceData.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 40px;">Select a race to view advanced practice analytics</p>';
+                exportBtn.disabled = true;
+                return;
+            }
+
+            exportBtn.disabled = false;
+
+            // Calculate averages for all drivers
+            const driversWithAvgs = practiceData.map((driver, idx) => ({
+                ...driver,
+                originalIndex: idx,
+                averages: calculateAverages(driver)
+            }));
+
+            // Calculate ranks for all drivers
+            const ranks5 = calculateRanks(driversWithAvgs, 5);
+            const ranks10 = calculateRanks(driversWithAvgs, 10);
+            const ranks15 = calculateRanks(driversWithAvgs, 15);
+            const ranks20 = calculateRanks(driversWithAvgs, 20);
+
+            // Sort drivers based on current sort column
+            let sortedDrivers = [...driversWithAvgs];
+            switch (advancedSortColumn) {
+                case 'name':
+                    sortedDrivers.sort((a, b) => advancedSortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+                    break;
+                case 'rank5':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = ranks5[a.originalIndex] || 999;
+                        const bVal = ranks5[b.originalIndex] || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                case 'rank10':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = ranks10[a.originalIndex] || 999;
+                        const bVal = ranks10[b.originalIndex] || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                case 'rank15':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = ranks15[a.originalIndex] || 999;
+                        const bVal = ranks15[b.originalIndex] || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                case 'rank20':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = ranks20[a.originalIndex] || 999;
+                        const bVal = ranks20[b.originalIndex] || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                case 'avg5':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = a.averages.avg5 || 999;
+                        const bVal = b.averages.avg5 || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                case 'avg10':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = a.averages.avg10 || a.averages.avg5 || parseFloat(a.bestLap) || 999;
+                        const bVal = b.averages.avg10 || b.averages.avg5 || parseFloat(b.bestLap) || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                case 'avg15':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = a.averages.avg15 || 999;
+                        const bVal = b.averages.avg15 || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                case 'avg20':
+                    sortedDrivers.sort((a, b) => {
+                        const aVal = a.averages.avg20 || 999;
+                        const bVal = b.averages.avg20 || 999;
+                        return advancedSortAsc ? aVal - bVal : bVal - aVal;
+                    });
+                    break;
+                default:
+                    sortedDrivers.sort((a, b) => a.runningPos - b.runningPos);
+            }
+
+            // Find the maximum lap number across all drivers
+            const maxLapNum = Math.max(...practiceData.flatMap(d => d.lapNumbers), 0);
+            
+            // Find global min/max lap times for color scale
+            const allTimes = practiceData.flatMap(d => d.lapTimes);
+            const minTime = Math.min(...allTimes);
+            const maxTime = Math.max(...allTimes);
+
+            // Build table HTML with current sort state
+            const arrow = (col) => advancedSortColumn === col ? (advancedSortAsc ? '▲' : '▼') : '';
+            const activeClass = (col) => advancedSortColumn === col ? 'active-sort' : '';
+            
+            let html = '<table class="advanced-heatmap-table"><thead><tr>';
+            html += `<th class="driver-header sortable-advanced ${activeClass('name')}" data-sort="name">Driver <span class="sort-arrow">${arrow('name')}</span></th>`;
+            
+            // Add rank columns if enabled
+            if (showRankColumns[5]) {
+                html += `<th class="rank-header sortable-advanced ${activeClass('rank5')}" data-sort="rank5">5L Rank <span class="sort-arrow">${arrow('rank5')}</span></th>`;
+            }
+            if (showRankColumns[10]) {
+                html += `<th class="rank-header sortable-advanced ${activeClass('rank10')}" data-sort="rank10">10L Rank <span class="sort-arrow">${arrow('rank10')}</span></th>`;
+            }
+            if (showRankColumns[15]) {
+                html += `<th class="rank-header sortable-advanced ${activeClass('rank15')}" data-sort="rank15">15L Rank <span class="sort-arrow">${arrow('rank15')}</span></th>`;
+            }
+            if (showRankColumns[20]) {
+                html += `<th class="rank-header sortable-advanced ${activeClass('rank20')}" data-sort="rank20">20L Rank <span class="sort-arrow">${arrow('rank20')}</span></th>`;
+            }
+            
+            // Add average columns
+            html += `<th class="avg-header sortable-advanced ${activeClass('avg5')}" data-sort="avg5">Best 5 <span class="sort-arrow">${arrow('avg5')}</span></th>`;
+            html += `<th class="avg-header sortable-advanced ${activeClass('avg10')}" data-sort="avg10">Best 10 <span class="sort-arrow">${arrow('avg10')}</span></th>`;
+            html += `<th class="avg-header sortable-advanced ${activeClass('avg15')}" data-sort="avg15">Best 15 <span class="sort-arrow">${arrow('avg15')}</span></th>`;
+            html += `<th class="avg-header sortable-advanced ${activeClass('avg20')}" data-sort="avg20">Best 20 <span class="sort-arrow">${arrow('avg20')}</span></th>`;
+            
+            // Add lap number headers
+            for (let i = 1; i <= maxLapNum; i++) {
+                html += `<th>${i}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            // Add rows for each driver
+            sortedDrivers.forEach(driver => {
+                const driverIdx = driver.originalIndex;
+                html += '<tr>';
+                html += `<td class="driver-cell"><span class="car-number">${driver.number}</span> ${driver.name}</td>`;
+                
+                // Add rank cells if enabled
+                if (showRankColumns[5]) {
+                    const rank = ranks5[driverIdx];
+                    const rankClass = rank <= 3 ? 'rank-top3' : (rank <= 10 ? 'rank-top10' : '');
+                    html += `<td class="rank-cell ${rankClass}">${rank || '--'}</td>`;
+                }
+                if (showRankColumns[10]) {
+                    const rank = ranks10[driverIdx];
+                    const rankClass = rank <= 3 ? 'rank-top3' : (rank <= 10 ? 'rank-top10' : '');
+                    html += `<td class="rank-cell ${rankClass}">${rank || '--'}</td>`;
+                }
+                if (showRankColumns[15]) {
+                    const rank = ranks15[driverIdx];
+                    const rankClass = rank <= 3 ? 'rank-top3' : (rank <= 10 ? 'rank-top10' : '');
+                    html += `<td class="rank-cell ${rankClass}">${rank || '--'}</td>`;
+                }
+                if (showRankColumns[20]) {
+                    const rank = ranks20[driverIdx];
+                    const rankClass = rank <= 3 ? 'rank-top3' : (rank <= 10 ? 'rank-top10' : '');
+                    html += `<td class="rank-cell ${rankClass}">${rank || '--'}</td>`;
+                }
+                
+                // Add average cells
+                const avgs = driver.averages;
+                html += `<td class="avg-cell" style="color: ${avgs.avg5 ? getLapTimeColor(avgs.avg5, minTime, maxTime) : '#333'}">${avgs.avg5 ? avgs.avg5.toFixed(3) : '--'}</td>`;
+                html += `<td class="avg-cell" style="color: ${avgs.avg10 ? getLapTimeColor(avgs.avg10, minTime, maxTime) : '#333'}">${avgs.avg10 ? avgs.avg10.toFixed(3) : '--'}</td>`;
+                html += `<td class="avg-cell" style="color: ${avgs.avg15 ? getLapTimeColor(avgs.avg15, minTime, maxTime) : '#333'}">${avgs.avg15 ? avgs.avg15.toFixed(3) : '--'}</td>`;
+                html += `<td class="avg-cell" style="color: ${avgs.avg20 ? getLapTimeColor(avgs.avg20, minTime, maxTime) : '#333'}">${avgs.avg20 ? avgs.avg20.toFixed(3) : '--'}</td>`;
+
+                // Create a map of lap number to lap time
+                const lapMap = {};
+                driver.lapNumbers.forEach((lapNum, idx) => {
+                    lapMap[lapNum] = driver.lapTimes[idx];
+                });
+
+                // Add lap cells
+                for (let i = 1; i <= maxLapNum; i++) {
+                    const lapTime = lapMap[i];
+                    if (lapTime) {
+                        const bgColor = getLapTimeColor(lapTime, minTime, maxTime);
+                        html += `<td class="lap-cell lap-time-cell" style="background-color: ${bgColor}; color: #000; font-weight: 600;" title="Lap ${i}: ${lapTime.toFixed(3)}s">${lapTime.toFixed(2)}</td>`;
+                    } else {
+                        html += '<td class="lap-cell"></td>';
+                    }
+                }
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Export to Excel functionality
+        document.getElementById('exportExcelBtn').addEventListener('click', () => {
+            if (practiceData.length === 0) return;
+
+            // Calculate all data for export
+            const driversWithAvgs = practiceData.map((driver, idx) => ({
+                ...driver,
+                originalIndex: idx,
+                averages: calculateAverages(driver)
+            }));
+
+            // Calculate ranks
+            const ranks5 = calculateRanks(driversWithAvgs, 5);
+            const ranks10 = calculateRanks(driversWithAvgs, 10);
+            const ranks15 = calculateRanks(driversWithAvgs, 15);
+            const ranks20 = calculateRanks(driversWithAvgs, 20);
+
+            // Find max lap number
+            const maxLapNum = Math.max(...practiceData.flatMap(d => d.lapNumbers), 0);
+
+            // Build CSV content
+            let csvContent = '';
+            
+            // Header row
+            let headers = ['Driver', 'Number', '5L Rank', '10L Rank', '15L Rank', '20L Rank', 'Best 5 Avg', 'Best 10 Avg', 'Best 15 Avg', 'Best 20 Avg'];
+            for (let i = 1; i <= maxLapNum; i++) {
+                headers.push(`Lap ${i}`);
+            }
+            csvContent += headers.join(',') + '\n';
+
+            // Data rows
+            driversWithAvgs.forEach(driver => {
+                const driverIdx = driver.originalIndex;
+                let row = [
+                    `"${driver.name}"`,
+                    driver.number,
+                    ranks5[driverIdx] || '',
+                    ranks10[driverIdx] || '',
+                    ranks15[driverIdx] || '',
+                    ranks20[driverIdx] || '',
+                    driver.averages.avg5 ? driver.averages.avg5.toFixed(3) : '',
+                    driver.averages.avg10 ? driver.averages.avg10.toFixed(3) : '',
+                    driver.averages.avg15 ? driver.averages.avg15.toFixed(3) : '',
+                    driver.averages.avg20 ? driver.averages.avg20.toFixed(3) : ''
+                ];
+
+                // Create lap map
+                const lapMap = {};
+                driver.lapNumbers.forEach((lapNum, idx) => {
+                    lapMap[lapNum] = driver.lapTimes[idx];
+                });
+
+                // Add lap times
+                for (let i = 1; i <= maxLapNum; i++) {
+                    row.push(lapMap[i] ? lapMap[i].toFixed(3) : '');
+                }
+
+                csvContent += row.join(',') + '\n';
+            });
+
+            // Create and trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Generate filename with race info
+            const raceName = currentRaceName.textContent.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+            const filename = `NASCAR_Practice_${raceName}_Advanced.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
     </script>
 </body>
 </html>
