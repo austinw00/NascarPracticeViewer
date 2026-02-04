@@ -833,10 +833,23 @@
             const upperBound = q3 + 1.5 * iqr;
             
             practiceData = data.laps.map(driver => {
-                // Filter out invalid lap times (pit stops, cautions, outliers)
-                const validLaps = driver.Laps.filter(lap => 
-                    lap.LapTime && lap.LapTime >= lowerBound && lap.LapTime <= upperBound
-                );
+                // Filter out invalid lap times (pit stops, cautions, outliers) AND the lap after an outlier
+                const allLaps = driver.Laps;
+                const validLaps = [];
+                
+                for (let i = 0; i < allLaps.length; i++) {
+                    const lap = allLaps[i];
+                    const isOutlier = !lap.LapTime || lap.LapTime < lowerBound || lap.LapTime > upperBound;
+                    
+                    // Check if previous lap was an outlier
+                    const prevLap = i > 0 ? allLaps[i - 1] : null;
+                    const prevWasOutlier = prevLap && (!prevLap.LapTime || prevLap.LapTime < lowerBound || prevLap.LapTime > upperBound);
+                    
+                    // Include lap only if it's not an outlier AND the previous lap wasn't an outlier
+                    if (!isOutlier && !prevWasOutlier) {
+                        validLaps.push(lap);
+                    }
+                }
                 
                 const lapTimes = validLaps.map(lap => lap.LapTime);
                 const lapSpeeds = validLaps.map(lap => parseFloat(lap.LapSpeed));
@@ -1475,13 +1488,16 @@
                 const row = document.createElement('tr');
                 const avgs = driver.averages;
 
+                // Use power curve for more emphasized gradient classification
                 const getAvgClass = (val, bestVal, allVals) => {
                     if (val === null) return 'no-data';
                     if (val === bestVal) return 'avg-best';
                     const range = Math.max(...allVals) - Math.min(...allVals);
-                    const threshold = (val - bestVal) / range;
-                    if (threshold < 0.25) return 'avg-good';
-                    if (threshold < 0.5) return 'avg-mid';
+                    const linearThreshold = (val - bestVal) / range;
+                    // Apply power curve (exponent 0.4) to emphasize differences
+                    const threshold = Math.pow(linearThreshold, 0.4);
+                    if (threshold < 0.35) return 'avg-good';
+                    if (threshold < 0.65) return 'avg-mid';
                     return 'avg-slow';
                 };
 
@@ -1512,13 +1528,18 @@
         }
 
         // Get color for lap time (green=fast, yellow=medium, red=slow)
+        // Uses power curve for more emphasized gradient - small differences show bigger color changes
         function getLapTimeColor(lapTime, minTime, maxTime) {
             if (!lapTime || !minTime || !maxTime) return 'transparent';
             
             const range = maxTime - minTime;
             if (range === 0) return 'rgb(0, 255, 0)';
             
-            const normalized = (lapTime - minTime) / range;
+            // Use power curve to emphasize differences - values closer to min stay green longer,
+            // but quickly shift to yellow/red as they get further from the fastest time
+            const linearNorm = (lapTime - minTime) / range;
+            // Apply power curve (exponent 0.4) to emphasize differences
+            const normalized = Math.pow(linearNorm, 0.4);
             
             // Green (0,255,0) -> Yellow (255,255,0) -> Red (255,0,0)
             let r, g, b;
