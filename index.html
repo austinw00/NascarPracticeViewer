@@ -443,6 +443,12 @@
                 <span class="session-label">Data:</span>
                 <span class="data-indicator"><span class="data-dot"></span> LIVE FEED</span>
             </div>
+            <div class="session-item">
+                <label class="auto-refresh-toggle">
+                    <input type="checkbox" id="autoRefreshToggle">
+                    <span class="session-label">Auto-Refresh (5s)</span>
+                </label>
+            </div>
         </div>
 
         <div class="panel" style="margin-bottom: 25px;">
@@ -664,6 +670,8 @@
         let isLocked = false;
         let raceListData = {};
         let currentlyLoadedRace = null;
+        let autoRefreshInterval = null;
+        const AUTO_REFRESH_INTERVAL_MS = 5000; // 5 seconds
 
         const chartContainer = document.getElementById('chartContainer');
         const hoverInstruction = document.getElementById('hoverInstruction');
@@ -678,6 +686,7 @@
         const currentRaceInfo = document.getElementById('currentRaceInfo');
         const currentRaceName = document.getElementById('currentRaceName');
         const currentTrackName = document.getElementById('currentTrackName');
+        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
 
         // Series name mapping
         const seriesNames = {
@@ -777,6 +786,11 @@
             
             // Load the data
             await loadData();
+
+            // Start auto-refresh if toggle is enabled
+            if (autoRefreshToggle.checked) {
+                startAutoRefresh();
+            }
         }
 
         // Event listeners for race selector
@@ -784,6 +798,45 @@
         seriesSelect.addEventListener('change', populateRaceDropdown);
         raceSelect.addEventListener('change', onRaceSelected);
         loadRaceBtn.addEventListener('click', loadSelectedRace);
+
+        // Auto-refresh event listener
+        autoRefreshToggle.addEventListener('change', function() {
+            if (this.checked && currentlyLoadedRace) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        });
+
+        // Start auto-refresh polling
+        function startAutoRefresh() {
+            stopAutoRefresh(); // Clear any existing interval
+            autoRefreshInterval = setInterval(async () => {
+                if (currentlyLoadedRace && autoRefreshToggle.checked) {
+                    await refreshData();
+                }
+            }, AUTO_REFRESH_INTERVAL_MS);
+        }
+
+        // Stop auto-refresh polling
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Refresh data without showing loading spinner (for auto-refresh)
+        async function refreshData() {
+            try {
+                const response = await fetch(DATA_URL);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                const data = await response.json();
+                processData(data);
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+            }
+        }
 
         // Fetch and process NASCAR data
         async function loadData() {
