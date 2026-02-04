@@ -736,7 +736,9 @@
             
             // Auto-select and load most recent race (last in the list)
             if (races.length > 0 && !currentlyLoadedRace) {
-                raceSelect.selectedIndex = races.length; // Last race in the list
+                // selectedIndex = races.length accounts for the "Select a race..." option at index 0
+                // The last race is at index races.length (0 is placeholder, 1-N are races)
+                raceSelect.selectedIndex = races.length;
                 loadRaceBtn.disabled = false;
                 // Auto-load the race
                 loadSelectedRace();
