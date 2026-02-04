@@ -23,7 +23,7 @@ body {
 header {
     text-align: center;
     padding: 30px 0;
-    border-bottom: 2px solid #2a2a3e;
+    border-bottom: 2px solid #2a2a2a;
     margin-bottom: 30px;
     position: relative;
 }
@@ -95,7 +95,7 @@ h1 {
 }
 
 .panel {
-    background: linear-gradient(145deg, rgba(30, 30, 45, 0.95), rgba(25, 25, 38, 0.98));
+    background: linear-gradient(145deg, rgba(28, 28, 28, 0.95), rgba(22, 22, 22, 0.98));
     border: 1px solid rgba(57, 255, 20, 0.15);
     border-radius: 12px;
     padding: 20px;
@@ -177,7 +177,7 @@ h1 {
 }
 
 .drivers-table-container::-webkit-scrollbar-track {
-    background: #0a0a0f;
+    background: #0a0a0a;
 }
 
 .drivers-table-container::-webkit-scrollbar-thumb {
@@ -201,7 +201,7 @@ h1 {
     border-bottom: 1px solid rgba(57, 255, 20, 0.2);
     position: sticky;
     top: 0;
-    background: #1a1a2e;
+    background: #1a1a1a;
     z-index: 1;
 }
 
@@ -250,7 +250,7 @@ h1 {
 }
 
 .car-number {
-    background: #252538;
+    background: #252525;
     color: #39ff14;
     padding: 1px 4px;
     border-radius: 3px;
@@ -339,7 +339,7 @@ h1 {
 }
 
 .race-selector select {
-    background: #1e1e2d;
+    background: #1e1e1e;
     border: 1px solid rgba(57, 255, 20, 0.3);
     color: #d0d0d0;
     padding: 10px 15px;
@@ -361,7 +361,7 @@ h1 {
 }
 
 .race-selector select option {
-    background: #1e1e2d;
+    background: #1e1e1e;
     color: #d0d0d0;
 }
 
@@ -439,7 +439,7 @@ h1 {
 .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #1a1a24;
+    border: 3px solid #1a1a1a;
     border-top-color: #39ff14;
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -645,7 +645,7 @@ footer {
     height: 10px;
     border-radius: 50%;
     background: #39ff14;
-    border: 2px solid #0d0d14;
+    border: 2px solid #0d0d0d;
 }
 
 .timeline-item.completed::before {
