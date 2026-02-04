@@ -324,6 +324,49 @@ h1 {
     animation: pulse 2s infinite;
 }
 
+/* Auto-Refresh Toggle */
+.auto-refresh-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.auto-refresh-toggle input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 36px;
+    height: 20px;
+    background: #1e1e2d;
+    border: 1px solid rgba(57, 255, 20, 0.3);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.auto-refresh-toggle input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #666;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.2s ease;
+}
+
+.auto-refresh-toggle input[type="checkbox"]:checked {
+    background: rgba(57, 255, 20, 0.2);
+    border-color: #39ff14;
+}
+
+.auto-refresh-toggle input[type="checkbox"]:checked::before {
+    background: #39ff14;
+    left: 18px;
+}
+
 /* Race Selector */
 .race-selector {
     display: flex;
