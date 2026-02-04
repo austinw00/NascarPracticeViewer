@@ -8,9 +8,9 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #080810 0%, #0d0d14 50%, #080810 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
     min-height: 100vh;
-    color: #c0c0c0;
+    color: #d0d0d0;
     overflow-x: hidden;
 }
 
@@ -23,7 +23,7 @@ body {
 header {
     text-align: center;
     padding: 30px 0;
-    border-bottom: 2px solid #1a1a24;
+    border-bottom: 2px solid #2a2a3e;
     margin-bottom: 30px;
     position: relative;
 }
@@ -49,7 +49,7 @@ h1 {
 }
 
 .subtitle {
-    color: #666;
+    color: #888;
     margin-top: 10px;
     font-size: 1.1rem;
     letter-spacing: 3px;
@@ -64,7 +64,7 @@ h1 {
 }
 
 .nav-links a {
-    color: #666;
+    color: #888;
     text-decoration: none;
     font-size: 0.85rem;
     text-transform: uppercase;
@@ -95,11 +95,11 @@ h1 {
 }
 
 .panel {
-    background: linear-gradient(145deg, rgba(15, 15, 20, 0.95), rgba(10, 10, 15, 0.98));
+    background: linear-gradient(145deg, rgba(30, 30, 45, 0.95), rgba(25, 25, 38, 0.98));
     border: 1px solid rgba(57, 255, 20, 0.15);
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
     position: relative;
     overflow: hidden;
 }
@@ -201,7 +201,7 @@ h1 {
     border-bottom: 1px solid rgba(57, 255, 20, 0.2);
     position: sticky;
     top: 0;
-    background: #0d0d14;
+    background: #1a1a2e;
     z-index: 1;
 }
 
@@ -250,7 +250,7 @@ h1 {
 }
 
 .car-number {
-    background: #1a1a24;
+    background: #252538;
     color: #39ff14;
     padding: 1px 4px;
     border-radius: 3px;
@@ -299,12 +299,12 @@ h1 {
 }
 
 .session-label {
-    color: #555;
+    color: #888;
     font-size: 0.85rem;
 }
 
 .session-value {
-    color: #ccc;
+    color: #d8d8d8;
     font-weight: 500;
 }
 
@@ -339,9 +339,9 @@ h1 {
 }
 
 .race-selector select {
-    background: #0d0d14;
+    background: #1e1e2d;
     border: 1px solid rgba(57, 255, 20, 0.3);
-    color: #ccc;
+    color: #d0d0d0;
     padding: 10px 15px;
     border-radius: 6px;
     font-size: 0.9rem;
@@ -361,12 +361,12 @@ h1 {
 }
 
 .race-selector select option {
-    background: #0d0d14;
-    color: #ccc;
+    background: #1e1e2d;
+    color: #d0d0d0;
 }
 
 .race-selector label {
-    color: #666;
+    color: #888;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -699,4 +699,166 @@ footer {
     color: #666;
     font-size: 0.8rem;
     margin-top: 5px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    header {
+        padding: 20px 0;
+        margin-bottom: 20px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        letter-spacing: 3px;
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+    }
+
+    /* Navigation */
+    .nav-links {
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .nav-links a {
+        font-size: 0.75rem;
+        padding: 5px 10px;
+    }
+
+    /* Dashboard */
+    .dashboard {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 15px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+    }
+
+    /* Race Selector */
+    .race-selector {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .race-selector select {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    .selector-group {
+        width: 100%;
+    }
+
+    /* Tables */
+    .drivers-table-container {
+        max-height: 400px;
+    }
+
+    .drivers-table th,
+    .drivers-table td {
+        padding: 4px;
+        font-size: 0.75rem;
+    }
+
+    .drivers-table th {
+        font-size: 0.6rem;
+    }
+
+    .car-number {
+        font-size: 0.6rem;
+    }
+
+    /* View Tabs */
+    .view-tabs {
+        flex-wrap: wrap;
+        gap: 3px;
+        padding: 3px;
+    }
+
+    .view-tab {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+    }
+
+    /* Session Info */
+    .session-info {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .session-item {
+        font-size: 0.8rem;
+    }
+
+    /* Chart Container */
+    .chart-container {
+        height: 250px;
+    }
+
+    /* Panel */
+    .panel {
+        padding: 15px;
+    }
+
+    .panel-title {
+        font-size: 0.9rem;
+    }
+
+    /* Card Grid */
+    .card-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem;
+        letter-spacing: 2px;
+    }
+
+    .nav-links a {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .race-selector {
+        padding: 10px;
+    }
+
+    .load-btn {
+        padding: 8px 20px;
+        font-size: 0.8rem;
+    }
 }

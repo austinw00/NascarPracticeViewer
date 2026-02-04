@@ -411,9 +411,9 @@
             <div class="selector-group">
                 <label for="seriesSelect">Series</label>
                 <select id="seriesSelect">
-                    <option value="1">Cup Series</option>
+                    <option value="1" selected>Cup Series</option>
                     <option value="2">Xfinity Series</option>
-                    <option value="3" selected>Craftsman Truck Series</option>
+                    <option value="3">Craftsman Truck Series</option>
                 </select>
             </div>
             <div class="selector-group">
@@ -663,6 +663,7 @@
         let selectedDriverIndex = null;
         let isLocked = false;
         let raceListData = {};
+        let currentlyLoadedRace = null;
 
         const chartContainer = document.getElementById('chartContainer');
         const hoverInstruction = document.getElementById('hoverInstruction');
@@ -732,6 +733,14 @@
             });
 
             raceSelect.disabled = false;
+            
+            // Auto-select and load most recent race (last in the list)
+            if (races.length > 0 && !currentlyLoadedRace) {
+                raceSelect.selectedIndex = races.length; // Last race in the list
+                loadRaceBtn.disabled = false;
+                // Auto-load the race
+                loadSelectedRace();
+            }
         }
 
         // Handle race selection
@@ -748,6 +757,9 @@
 
             // Build the practice data URL
             DATA_URL = `https://cf.nascar.com/cacher/live/series_${series_id}/${race_id}/lap-times-practice.json`;
+            
+            // Mark that we've loaded a race
+            currentlyLoadedRace = race_id;
 
             // Update current race info display
             currentRaceName.textContent = race_name;
