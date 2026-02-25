@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASCAR DraftKings Odds</title>
+    <link rel="stylesheet" href="shared-styles.css">
+    <style>
+        /* Odds Page Specific Styles */
+        .odds-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(57, 255, 20, 0.03);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .odds-event-info h3 {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+
+        .odds-event-info p {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .odds-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid rgba(57, 255, 20, 0.4);
+            color: #39ff14;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(57, 255, 20, 0.1);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .last-updated {
+            color: #555;
+            font-size: 0.75rem;
+        }
+
+        /* Odds Table */
+        .odds-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .odds-table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .odds-table-container::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        .odds-table-container::-webkit-scrollbar-thumb {
+            background: #39ff14;
+            border-radius: 3px;
+        }
+
+        .odds-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .odds-table th {
+            text-align: left;
+            padding: 9px 10px;
+            color: #39ff14;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+            position: sticky;
+            top: 0;
+            background: #1a1a1a;
+            z-index: 1;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .odds-table th:hover {
+            background: rgba(57, 255, 20, 0.15);
+        }
+
+        .odds-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.82rem;
+        }
+
+        .odds-table tr:hover td {
+            background: rgba(57, 255, 20, 0.04);
+        }
+
+        .odds-rank {
+            color: #666;
+            font-weight: 700;
+            width: 35px;
+            text-align: center;
+        }
+
+        .odds-rank.top3 { color: #39ff14; }
+
+        .odds-driver {
+            font-weight: 500;
+            color: #ddd;
+        }
+
+        .odds-american {
+            font-family: 'Consolas', monospace;
+            font-weight: 700;
+            font-size: 0.88rem;
+        }
+
+        .odds-american.favorite { color: #39ff14; }
+        .odds-american.longshot { color: #ff6644; }
+        .odds-american.neutral  { color: #ffcc00; }
+
+        .odds-implied {
+            color: #888;
+            font-family: 'Consolas', monospace;
+            font-size: 0.78rem;
+        }
+
+        .odds-decimal {
+            color: #666;
+            font-family: 'Consolas', monospace;
+            font-size: 0.78rem;
+        }
+
+        .suspended-badge {
+            display: inline-block;
+            padding: 1px 6px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 3px;
+            color: #ff4444;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            margin-left: 6px;
+        }
+
+        /* Tabs row */
+        .market-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            padding: 5px;
+            background: rgba(57, 255, 20, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(57, 255, 20, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .market-tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 11px 20px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #666;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            position: relative;
+        }
+
+        .market-tab:hover {
+            color: #ccc;
+            background: rgba(57, 255, 20, 0.05);
+        }
+
+        .market-tab.active {
+            background: rgba(57, 255, 20, 0.1);
+            border-color: rgba(57, 255, 20, 0.3);
+            color: #39ff14;
+        }
+
+        .market-tab .count-badge {
+            display: inline-block;
+            background: rgba(57, 255, 20, 0.2);
+            color: #39ff14;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            padding: 1px 6px;
+            margin-left: 6px;
+        }
+
+        .market-content {
+            display: none;
+        }
+
+        .market-content.active {
+            display: block;
+        }
+
+        /* CORS notice */
+        .cors-notice {
+            background: rgba(255, 204, 0, 0.07);
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            color: #ffcc00;
+        }
+
+        .cors-notice h4 {
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cors-notice p, .cors-notice li {
+            font-size: 0.82rem;
+            color: #bba000;
+            line-height: 1.6;
+        }
+
+        .cors-notice ul {
+            margin: 8px 0 0 18px;
+        }
+
+        .cors-notice code {
+            background: rgba(255,204,0,0.1);
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+        }
+
+        /* Market count cards */
+        .market-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .market-count-card {
+            background: rgba(57, 255, 20, 0.03);
+            border: 1px solid rgba(57, 255, 20, 0.1);
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .market-count-card:hover {
+            border-color: rgba(57, 255, 20, 0.3);
+        }
+
+        .market-count-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #39ff14;
+        }
+
+        .market-count-label {
+            font-size: 0.72rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .market-count-card.no-data .market-count-value {
+            color: #444;
+        }
+
+        /* Probability bar */
+        .prob-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .prob-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            overflow: hidden;
+            min-width: 50px;
+            max-width: 120px;
+        }
+
+        .prob-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #39ff14, #2ecc71);
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 767px) {
+            .odds-header-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .market-summary {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .odds-table th,
+            .odds-table td {
+                padding: 6px 6px;
+                font-size: 0.75rem;
+            }
+
+            .prob-bar {
+                display: none;
+            }
+
+            .odds-decimal {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏁 NASCAR Viewer</h1>
+            <p class="subtitle">DRAFTKINGS ODDS</p>
+            <div class="nav-links">
+                <a href="index.html">Practice Viewer</a>
+                <a href="weekend.html">Weekend Viewer</a>
+                <a href="loopstats.html">Loop Stats</a>
+                <a href="pitdata.html">Pit Data</a>
+                <a href="odds.html" class="active">DK Odds</a>
+            </div>
+        </header>
+
+        <main>
+            <!-- Controls -->
+            <div class="race-selector" style="justify-content: flex-start; gap:20px;">
+                <div class="selector-group">
+                    <label for="seriesSelect">Series</label>
+                    <select id="seriesSelect">
+                        <option value="87556">Cup Series</option>
+                        <option value="87557">Xfinity Series</option>
+                        <option value="87558">Truck Series</option>
+                    </select>
+                </div>
+                <button id="loadBtn" class="load-btn">Load Odds</button>
+                <label class="auto-refresh-toggle" title="Auto-refresh every 60 seconds">
+                    <input type="checkbox" id="autoRefreshToggle">
+                    <span style="color:#888; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">Auto Refresh</span>
+                </label>
+            </div>
+
+            <!-- CORS notice (hidden until needed) -->
+            <div id="corsNotice" class="cors-notice" style="display:none;">
+                <h4>⚠ Unable to reach DraftKings API directly</h4>
+                <p>Browser security (CORS) blocked the request. This is normal when opening the file locally. To load live odds, try one of these options:</p>
+                <ul>
+                    <li>Open the page through a local server: <code>npx serve .</code> (may still be blocked depending on DK headers)</li>
+                    <li>Use a browser extension like <strong>CORS Unblock</strong> or <strong>Allow CORS</strong> while on this page</li>
+                    <li>Run a small proxy server locally and set <code>PROXY_URL</code> at the top of this page's script</li>
+                </ul>
+            </div>
+
+            <!-- Event info bar (hidden until data loads) -->
+            <div id="oddsHeaderBar" class="odds-header-bar" style="display:none;">
+                <div class="odds-event-info">
+                    <h3 id="eventName">—</h3>
+                    <p id="eventDate">—</p>
+                </div>
+                <div class="odds-controls">
+                    <span class="last-updated" id="lastUpdated"></span>
+                    <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+                </div>
+            </div>
+
+            <!-- Summary cards -->
+            <div class="market-summary" id="marketSummary" style="display:none;">
+                <div class="market-count-card" id="cardWin">
+                    <div class="market-count-value" id="countWin">—</div>
+                    <div class="market-count-label">To Win</div>
+                </div>
+                <div class="market-count-card" id="cardTop5">
+                    <div class="market-count-value" id="countTop5">—</div>
+                    <div class="market-count-label">Top 5</div>
+                </div>
+                <div class="market-count-card" id="cardTop10">
+                    <div class="market-count-value" id="countTop10">—</div>
+                    <div class="market-count-label">Top 10</div>
+                </div>
+            </div>
+
+            <!-- Market tabs -->
+            <div class="market-tabs" id="marketTabs" style="display:none;">
+                <button class="market-tab active" data-market="win">
+                    To Win <span class="count-badge" id="tabBadgeWin">0</span>
+                </button>
+                <button class="market-tab" data-market="top5">
+                    Top 5 <span class="count-badge" id="tabBadgeTop5">0</span>
+                </button>
+                <button class="market-tab" data-market="top10">
+                    Top 10 <span class="count-badge" id="tabBadgeTop10">0</span>
+                </button>
+            </div>
+
+            <!-- Market content panels -->
+            <div id="marketWin" class="market-content active">
+                <div class="panel">
+                    <div class="panel-title">Race Winner (To Win)</div>
+                    <div id="tableWin" class="loading">Click "Load Odds" to fetch DraftKings data</div>
+                </div>
+            </div>
+
+            <div id="marketTop5" class="market-content">
+                <div class="panel">
+                    <div class="panel-title">Top 5 Finish</div>
+                    <div id="tableTop5" class="loading">Click "Load Odds" to fetch DraftKings data</div>
+                </div>
+            </div>
+
+            <div id="marketTop10" class="market-content">
+                <div class="panel">
+                    <div class="panel-title">Top 10 Finish</div>
+                    <div id="tableTop10" class="loading">Click "Load Odds" to fetch DraftKings data</div>
+                </div>
+            </div>
+        </main>
+
+        <footer>NASCAR Viewer · DraftKings odds data</footer>
+    </div>
+
+    <script>
+        // ── Configuration ────────────────────────────────────────────────────────
+        // If CORS blocks direct requests, set a proxy URL prefix here, e.g.:
+        //   const PROXY_URL = 'https://corsproxy.io/?';
+        const PROXY_URL = '';
+
+        // Known DraftKings subcategory IDs for NASCAR markets.
+        // If these change, update the values below.
+        const SUBCATEGORY_IDS = {
+            win:   '4532',
+            top5:  '4561',
+            top10: '4562',
+        };
+
+        // Fallback ranges to try if the above IDs return no data
+        const DISCOVER_RANGE = { min: 4530, max: 4600 };
+
+        // ── State ────────────────────────────────────────────────────────────────
+        let autoRefreshTimer = null;
+        let currentLeagueId = '87556';
+        let lastFetchTime = null;
+
+        const oddsData = { win: [], top5: [], top10: [] };
+
+        // ── DOM refs ─────────────────────────────────────────────────────────────
+        const loadBtn           = document.getElementById('loadBtn');
+        const refreshBtn        = document.getElementById('refreshBtn');
+        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+        const seriesSelect      = document.getElementById('seriesSelect');
+        const corsNotice        = document.getElementById('corsNotice');
+        const oddsHeaderBar     = document.getElementById('oddsHeaderBar');
+        const marketSummary     = document.getElementById('marketSummary');
+        const marketTabs        = document.getElementById('marketTabs');
+
+        // ── Init ─────────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBtn.addEventListener('click', () => loadAllOdds());
+            refreshBtn.addEventListener('click', () => loadAllOdds());
+            autoRefreshToggle.addEventListener('change', handleAutoRefresh);
+            seriesSelect.addEventListener('change', () => {
+                currentLeagueId = seriesSelect.value;
+            });
+
+            document.querySelectorAll('.market-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.market));
+            });
+        });
+
+        // ── Tab switching ────────────────────────────────────────────────────────
+        function switchTab(market) {
+            document.querySelectorAll('.market-tab').forEach(t =>
+                t.classList.toggle('active', t.dataset.market === market)
+            );
+            document.querySelectorAll('.market-content').forEach(c =>
+                c.classList.toggle('active', c.id === `market${capitalize(market)}`)
+            );
+        }
+
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        // ── Auto-refresh ─────────────────────────────────────────────────────────
+        function handleAutoRefresh() {
+            clearInterval(autoRefreshTimer);
+            if (autoRefreshToggle.checked) {
+                autoRefreshTimer = setInterval(() => loadAllOdds(), 60000);
+            }
+        }
+
+        // ── Main fetch orchestrator ──────────────────────────────────────────────
+        async function loadAllOdds() {
+            corsNotice.style.display = 'none';
+            loadBtn.disabled = true;
+            refreshBtn.disabled = true;
+            loadBtn.textContent = 'Loading…';
+
+            currentLeagueId = seriesSelect.value;
+
+            const results = await Promise.allSettled([
+                fetchSubcategory(currentLeagueId, SUBCATEGORY_IDS.win),
+                fetchSubcategory(currentLeagueId, SUBCATEGORY_IDS.top5),
+                fetchSubcategory(currentLeagueId, SUBCATEGORY_IDS.top10),
+            ]);
+
+            let anySuccess = false;
+            let corsError  = false;
+
+            const keys = ['win', 'top5', 'top10'];
+            const payloads = {};
+
+            results.forEach((result, i) => {
+                const key = keys[i];
+                if (result.status === 'fulfilled' && result.value) {
+                    payloads[key] = result.value;
+                    anySuccess = true;
+                } else {
+                    if (result.reason && result.reason.message &&
+                        result.reason.message.toLowerCase().includes('cors')) {
+                        corsError = true;
+                    }
+                    payloads[key] = null;
+                }
+            });
+
+            // If none succeeded due to CORS, show the notice
+            if (!anySuccess) {
+                corsNotice.style.display = 'block';
+                loadBtn.disabled = false;
+                refreshBtn.disabled = false;
+                loadBtn.textContent = 'Load Odds';
+                return;
+            }
+
+            // Try to extract event info from whichever payload succeeded
+            const firstGood = Object.values(payloads).find(p => p !== null);
+            if (firstGood) {
+                populateEventInfo(firstGood);
+                oddsHeaderBar.style.display = 'flex';
+                marketSummary.style.display = 'grid';
+                marketTabs.style.display = 'flex';
+            }
+
+            // Render each market
+            renderMarket('win',   payloads.win);
+            renderMarket('top5',  payloads.top5);
+            renderMarket('top10', payloads.top10);
+
+            // Update summary counts
+            updateSummary();
+
+            lastFetchTime = new Date();
+            document.getElementById('lastUpdated').textContent =
+                `Updated ${lastFetchTime.toLocaleTimeString()}`;
+
+            loadBtn.disabled = false;
+            refreshBtn.disabled = false;
+            loadBtn.textContent = 'Load Odds';
+        }
+
+        // ── DraftKings API fetch ──────────────────────────────────────────────────
+        async function fetchSubcategory(leagueId, subcategoryId) {
+            const eventsQuery = `$filter=leagueId eq '${leagueId}' AND clientMetadata/Subcategories/any(s: s/Id eq '${subcategoryId}')`;
+            const marketsQuery = `$filter=clientMetadata/subCategoryId eq '${subcategoryId}' AND tags/all(t: t ne 'SportcastBetBuilder')`;
+            const base = 'https://sportsbook-nash.draftkings.com/sites/US-OH-SB/api/sportscontent/controldata/league/leagueSubcategory/v1/markets';
+            const params = new URLSearchParams({
+                isBatchable: 'false',
+                templateVars: leagueId,
+                eventsQuery,
+                marketsQuery,
+                include: 'Events',
+                entity: 'events',
+            });
+            const url = `${PROXY_URL}${base}?${params.toString()}`;
+
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        }
+
+        // ── Parse & render ───────────────────────────────────────────────────────
+
+        function populateEventInfo(payload) {
+            // Try common response shapes
+            const events = payload.events || payload.eventGroups?.[0]?.events ||
+                           payload.eventGroup?.events || [];
+            if (events.length > 0) {
+                const evt = events[0];
+                const name = evt.name || evt.eventName || evt.description || 'NASCAR Race';
+                document.getElementById('eventName').textContent = name;
+                const startDate = evt.startDate || evt.startEventDate || evt.scheduledDate;
+                if (startDate) {
+                    document.getElementById('eventDate').textContent =
+                        new Date(startDate).toLocaleString('en-US', {
+                            weekday: 'long', month: 'long', day: 'numeric',
+                            hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+                        });
+                } else {
+                    document.getElementById('eventDate').textContent = '';
+                }
+            }
+        }
+
+        function extractOutcomes(payload) {
+            if (!payload) return [];
+
+            // DraftKings "nash" API response shape (v1/markets)
+            // Shape A: { markets: [ { outcomes: [...] } ] }
+            const markets = payload.markets || payload.eventGroup?.markets ||
+                            payload.offerGroups?.[0]?.offers || [];
+
+            if (Array.isArray(markets) && markets.length > 0) {
+                // Flatten all outcomes across markets (usually just one market per subcategory call)
+                const allOutcomes = [];
+                markets.forEach(market => {
+                    const outcomes = market.outcomes || market.selections || [];
+                    outcomes.forEach(o => allOutcomes.push(o));
+                });
+                return allOutcomes;
+            }
+
+            // Shape B: { offerCategories: [...] } (older DK API)
+            const offerCategories = payload.eventGroup?.offerCategories || [];
+            offerCategories.forEach(cat => {
+                cat.offerSubcategoryDescriptors?.forEach(sub => {
+                    sub.offerSubcategory?.offers?.forEach(offer => {
+                        offer.outcomes?.forEach(o => {
+                        });
+                    });
+                });
+            });
+
+            return [];
+        }
+
+        function parseOddsAmerican(outcome) {
+            // Try multiple field names used across DK API versions
+            const raw = outcome.oddsAmerican ?? outcome.americanOdds ??
+                        outcome.displayOdds?.american ?? outcome.displayOdds ??
+                        outcome.odds?.american ?? outcome.formattedPrice ?? null;
+            if (raw === null || raw === undefined) return null;
+            const str = String(raw).replace(/\s/g, '');
+            return str;
+        }
+
+        function americanToDecimal(american) {
+            const n = parseFloat(american);
+            if (isNaN(n)) return null;
+            return n >= 0 ? (n / 100 + 1).toFixed(2) : (100 / Math.abs(n) + 1).toFixed(2);
+        }
+
+        function americanToImplied(american) {
+            const n = parseFloat(american);
+            if (isNaN(n)) return null;
+            const prob = n >= 0 ? 100 / (n + 100) : Math.abs(n) / (Math.abs(n) + 100);
+            return (prob * 100).toFixed(1) + '%';
+        }
+
+        function oddsClass(american) {
+            const n = parseFloat(american);
+            if (isNaN(n)) return 'neutral';
+            if (n < 0) return 'favorite';
+            if (n > 500) return 'longshot';
+            return 'neutral';
+        }
+
+        function renderMarket(key, payload) {
+            const containerId = { win: 'tableWin', top5: 'tableTop5', top10: 'tableTop10' }[key];
+            const container = document.getElementById(containerId);
+
+            if (!payload) {
+                container.innerHTML = `<div class="error-message">No data available for this market. The subcategory ID may need updating.</div>`;
+                oddsData[key] = [];
+                return;
+            }
+
+            const outcomes = extractOutcomes(payload);
+            if (outcomes.length === 0) {
+                container.innerHTML = `<div class="error-message">Market returned no outcomes. It may be off the board or suspended.</div>`;
+                oddsData[key] = [];
+                return;
+            }
+
+            // Sort by American odds (favorites first)
+            const sorted = [...outcomes].sort((a, b) => {
+                const aVal = parseFloat(parseOddsAmerican(a));
+                const bVal = parseFloat(parseOddsAmerican(b));
+                if (isNaN(aVal) && isNaN(bVal)) return 0;
+                if (isNaN(aVal)) return 1;
+                if (isNaN(bVal)) return -1;
+                // Negative odds (favorites) sort before positive
+                const aSort = aVal < 0 ? aVal - 10000 : aVal;
+                const bSort = bVal < 0 ? bVal - 10000 : bVal;
+                return aSort - bSort;
+            });
+
+            oddsData[key] = sorted;
+
+            container.innerHTML = `
+                <div class="odds-table-container">
+                    <table class="odds-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align:center;">#</th>
+                                <th>Driver</th>
+                                <th>American Odds</th>
+                                <th>Implied %</th>
+                                <th>Decimal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sorted.map((outcome, idx) => {
+                                const name = outcome.outcomeName || outcome.participantName ||
+                                             outcome.label || outcome.name || 'Unknown';
+                                const american = parseOddsAmerican(outcome);
+                                const implied  = american ? americanToImplied(american) : '—';
+                                const decimal  = american ? americanToDecimal(american) : '—';
+                                const suspended = outcome.isSuspended || outcome.suspended || false;
+                                const rankClass = idx < 3 ? 'top3' : '';
+                                const oc = american ? oddsClass(american) : 'neutral';
+                                const impliedNum = american ? parseFloat(americanToImplied(american)) : 0;
+                                const barWidth = Math.min(impliedNum, 80);
+
+                                return `
+                                <tr>
+                                    <td class="odds-rank ${rankClass}">${idx + 1}</td>
+                                    <td class="odds-driver">
+                                        ${name}
+                                        ${suspended ? '<span class="suspended-badge">Susp</span>' : ''}
+                                    </td>
+                                    <td class="odds-american ${oc}">
+                                        ${american || '—'}
+                                    </td>
+                                    <td class="odds-implied">
+                                        <div class="prob-bar-wrap">
+                                            <span>${implied}</span>
+                                            <div class="prob-bar">
+                                                <div class="prob-bar-fill" style="width:${barWidth}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="odds-decimal">${decimal}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function updateSummary() {
+            const keys = ['win', 'top5', 'top10'];
+            const ids  = { win: 'Win', top5: 'Top5', top10: 'Top10' };
+
+            keys.forEach(key => {
+                const count = oddsData[key].length;
+                const valueEl = document.getElementById(`count${ids[key]}`);
+                const cardEl  = document.getElementById(`card${ids[key]}`);
+                const badgeEl = document.getElementById(`tabBadge${ids[key]}`);
+
+                valueEl.textContent = count > 0 ? count : '—';
+                if (badgeEl) badgeEl.textContent = count;
+                if (cardEl) cardEl.classList.toggle('no-data', count === 0);
+            });
+        }
+    </script>
+</body>
+</html>
