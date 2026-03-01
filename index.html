@@ -153,6 +153,53 @@
         .lap-time-cell {
             border-radius: 2px;
             padding: 3px 2px;
+            cursor: pointer;
+        }
+
+        .lap-time-cell:hover {
+            outline: 2px solid #fff;
+            outline-offset: -2px;
+        }
+
+        .lap-time-cell.excluded-cell {
+            background-color: #333 !important;
+            color: #666 !important;
+            text-decoration: line-through;
+            opacity: 0.5;
+            font-weight: 400 !important;
+        }
+
+        .exclusion-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 15px;
+        }
+
+        .exclusion-count {
+            color: #ff6b6b;
+            font-size: 0.75rem;
+        }
+
+        .clear-exclusions-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 107, 107, 0.4);
+            color: #ff6b6b;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s ease;
+        }
+
+        .clear-exclusions-btn:hover {
+            background: rgba(255, 107, 107, 0.15);
+            border-color: #ff6b6b;
+        }
+
+        .clear-exclusions-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
         }
 
         /* Color legend */
@@ -821,7 +868,12 @@
                             <span class="legend-label">Slowest</span>
                         </div>
                     </div>
-                    <p style="color: #555; font-size: 0.75rem;">Click column headers to sort</p>
+                    <p style="color: #555; font-size: 0.75rem;">Click column headers to sort · Click lap cells to exclude/include
+                        <span class="exclusion-controls" id="heatmapExclusionControls" style="display: none;">
+                            <span class="exclusion-count" id="heatmapExclusionCount"></span>
+                            <button class="clear-exclusions-btn" id="heatmapClearExclusions">Clear All</button>
+                        </span>
+                    </p>
                 </div>
                 <div class="heatmap-container" id="heatmapContainer">
                     <p style="color: #666; text-align: center; padding: 40px;">
@@ -857,7 +909,12 @@
                             <span class="legend-label">Slowest</span>
                         </div>
                     </div>
-                    <p style="color: #555; font-size: 0.75rem;">Click column headers to sort</p>
+                    <p style="color: #555; font-size: 0.75rem;">Click column headers to sort · Click lap cells to exclude/include
+                        <span class="exclusion-controls" id="advancedExclusionControls" style="display: none;">
+                            <span class="exclusion-count" id="advancedExclusionCount"></span>
+                            <button class="clear-exclusions-btn" id="advancedClearExclusions">Clear All</button>
+                        </span>
+                    </p>
                 </div>
                 <div class="advanced-heatmap-container" id="advancedHeatmapContainer">
                     <p style="color: #666; text-align: center; padding: 40px;">
@@ -877,6 +934,7 @@
         const RACE_LIST_BASE_URL = 'https://cf.nascar.com/cacher/';
         
         let practiceData = [];
+        let manualExclusions = new Set(); // Keys: "driverNumber_lapNumber"
         let lapChart = null;
         let selectedDriverIndex = null;
         let isLocked = false;
@@ -1083,6 +1141,9 @@
         }
 
         function processData(data) {
+            // Clear manual exclusions when new data is loaded
+            manualExclusions.clear();
+
             // First pass: collect all lap times to calculate outlier thresholds
             const allRawLapTimes = data.laps.flatMap(driver => 
                 driver.Laps.filter(lap => lap.LapTime && lap.LapTime > 10 && lap.LapTime < 60)
@@ -1407,20 +1468,41 @@
             renderAveragesTable();
         });
 
-        // Heatmap header click sorting (delegated)
+        // Heatmap header click sorting and cell exclusion (delegated)
         document.getElementById('heatmapContainer').addEventListener('click', (e) => {
+            // Handle header sorting
             const th = e.target.closest('.sortable-heatmap');
-            if (!th || practiceData.length === 0) return;
-            
-            const sortKey = th.dataset.sort;
-            if (heatmapSortColumn === sortKey) {
-                heatmapSortAsc = !heatmapSortAsc;
-            } else {
-                heatmapSortColumn = sortKey;
-                heatmapSortAsc = true;
+            if (th && practiceData.length > 0) {
+                const sortKey = th.dataset.sort;
+                if (heatmapSortColumn === sortKey) {
+                    heatmapSortAsc = !heatmapSortAsc;
+                } else {
+                    heatmapSortColumn = sortKey;
+                    heatmapSortAsc = true;
+                }
+                renderHeatmap();
+                return;
             }
-            
+
+            // Handle lap cell exclusion toggle
+            const cell = e.target.closest('.lap-time-cell');
+            if (cell && cell.dataset.driver && cell.dataset.lap) {
+                const key = `${cell.dataset.driver}_${cell.dataset.lap}`;
+                if (manualExclusions.has(key)) {
+                    manualExclusions.delete(key);
+                } else {
+                    manualExclusions.add(key);
+                }
+                renderHeatmap();
+                renderAdvancedHeatmap();
+            }
+        });
+
+        // Clear exclusions button for heatmap
+        document.getElementById('heatmapClearExclusions').addEventListener('click', () => {
+            manualExclusions.clear();
             renderHeatmap();
+            renderAdvancedHeatmap();
         });
 
         // Compare Drivers functionality
@@ -1659,9 +1741,47 @@
             `).join('');
         }
 
+        // Get effective lap data excluding manually excluded cells
+        function getEffectiveLapData(driver) {
+            const filteredTimes = [];
+            const filteredNumbers = [];
+            const filteredSpeeds = [];
+            for (let i = 0; i < driver.lapNumbers.length; i++) {
+                const key = `${driver.number}_${driver.lapNumbers[i]}`;
+                if (!manualExclusions.has(key)) {
+                    filteredTimes.push(driver.lapTimes[i]);
+                    filteredNumbers.push(driver.lapNumbers[i]);
+                    if (driver.lapSpeeds[i] !== undefined) {
+                        filteredSpeeds.push(driver.lapSpeeds[i]);
+                    }
+                }
+            }
+            return { lapTimes: filteredTimes, lapNumbers: filteredNumbers, lapSpeeds: filteredSpeeds };
+        }
+
+        // Update exclusion controls UI
+        function updateExclusionControls() {
+            const count = manualExclusions.size;
+            const heatmapControls = document.getElementById('heatmapExclusionControls');
+            const heatmapCount = document.getElementById('heatmapExclusionCount');
+            const advancedControls = document.getElementById('advancedExclusionControls');
+            const advancedCount = document.getElementById('advancedExclusionCount');
+
+            if (count > 0) {
+                const text = `${count} cell${count > 1 ? 's' : ''} excluded`;
+                heatmapControls.style.display = 'inline-flex';
+                heatmapCount.textContent = text;
+                advancedControls.style.display = 'inline-flex';
+                advancedCount.textContent = text;
+            } else {
+                heatmapControls.style.display = 'none';
+                advancedControls.style.display = 'none';
+            }
+        }
+
         // Calculate best consecutive X lap averages for a driver
-        function calculateAverages(driver) {
-            const laps = driver.lapTimes;
+        function calculateAverages(driver, lapTimesOverride) {
+            const laps = lapTimesOverride || driver.lapTimes;
             const result = {
                 avg5: null,
                 avg10: null,
@@ -1835,11 +1955,16 @@
         function renderHeatmap() {
             const container = document.getElementById('heatmapContainer');
 
-            // Calculate averages for sorting
-            const driversWithAvgs = practiceData.map(driver => ({
-                ...driver,
-                averages: calculateAverages(driver)
-            }));
+            // Calculate averages using filtered (exclusion-aware) lap data
+            const driversWithAvgs = practiceData.map(driver => {
+                const effective = getEffectiveLapData(driver);
+                return {
+                    ...driver,
+                    averages: calculateAverages(driver, effective.lapTimes),
+                    effectiveLapTimes: effective.lapTimes,
+                    effectiveLapNumbers: effective.lapNumbers
+                };
+            });
 
             // Sort drivers based on current sort column
             let sortedDrivers = [...driversWithAvgs];
@@ -1882,10 +2007,10 @@
             // Find the maximum lap number across all drivers
             const maxLapNum = Math.max(...practiceData.flatMap(d => d.lapNumbers), 0);
             
-            // Find global min/max lap times for color scale
-            const allTimes = practiceData.flatMap(d => d.lapTimes);
-            const minTime = Math.min(...allTimes);
-            const maxTime = Math.max(...allTimes);
+            // Find global min/max lap times for color scale (using only non-excluded laps)
+            const allTimes = driversWithAvgs.flatMap(d => d.effectiveLapTimes);
+            const minTime = allTimes.length > 0 ? Math.min(...allTimes) : 0;
+            const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : 0;
 
             // Build table HTML with current sort state
             const arrow = (col) => heatmapSortColumn === col ? (heatmapSortAsc ? '▲' : '▼') : '';
@@ -1926,8 +2051,13 @@
                 for (let i = 1; i <= maxLapNum; i++) {
                     const lapTime = lapMap[i];
                     if (lapTime) {
-                        const bgColor = getLapTimeColor(lapTime, minTime, maxTime);
-                        html += `<td class="lap-cell lap-time-cell" style="background-color: ${bgColor}; color: #000; font-weight: 600;" title="Lap ${i}: ${lapTime.toFixed(3)}s">${lapTime.toFixed(2)}</td>`;
+                        const isExcluded = manualExclusions.has(`${driver.number}_${i}`);
+                        if (isExcluded) {
+                            html += `<td class="lap-cell lap-time-cell excluded-cell" data-driver="${driver.number}" data-lap="${i}" title="Lap ${i}: ${lapTime.toFixed(3)}s (excluded)">${lapTime.toFixed(2)}</td>`;
+                        } else {
+                            const bgColor = getLapTimeColor(lapTime, minTime, maxTime);
+                            html += `<td class="lap-cell lap-time-cell" data-driver="${driver.number}" data-lap="${i}" style="background-color: ${bgColor}; color: #000; font-weight: 600;" title="Lap ${i}: ${lapTime.toFixed(3)}s">${lapTime.toFixed(2)}</td>`;
+                        }
                     } else {
                         html += '<td class="lap-cell"></td>';
                     }
@@ -1937,6 +2067,7 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+            updateExclusionControls();
         }
 
         // Advanced TEST View state
@@ -1959,19 +2090,40 @@
             });
         });
 
-        // Advanced heatmap header click sorting (delegated)
+        // Advanced heatmap header click sorting and cell exclusion (delegated)
         document.getElementById('advancedHeatmapContainer').addEventListener('click', (e) => {
+            // Handle header sorting
             const th = e.target.closest('.sortable-advanced');
-            if (!th || practiceData.length === 0) return;
-            
-            const sortKey = th.dataset.sort;
-            if (advancedSortColumn === sortKey) {
-                advancedSortAsc = !advancedSortAsc;
-            } else {
-                advancedSortColumn = sortKey;
-                advancedSortAsc = true;
+            if (th && practiceData.length > 0) {
+                const sortKey = th.dataset.sort;
+                if (advancedSortColumn === sortKey) {
+                    advancedSortAsc = !advancedSortAsc;
+                } else {
+                    advancedSortColumn = sortKey;
+                    advancedSortAsc = true;
+                }
+                renderAdvancedHeatmap();
+                return;
             }
-            
+
+            // Handle lap cell exclusion toggle
+            const cell = e.target.closest('.lap-time-cell');
+            if (cell && cell.dataset.driver && cell.dataset.lap) {
+                const key = `${cell.dataset.driver}_${cell.dataset.lap}`;
+                if (manualExclusions.has(key)) {
+                    manualExclusions.delete(key);
+                } else {
+                    manualExclusions.add(key);
+                }
+                renderHeatmap();
+                renderAdvancedHeatmap();
+            }
+        });
+
+        // Clear exclusions button for advanced heatmap
+        document.getElementById('advancedClearExclusions').addEventListener('click', () => {
+            manualExclusions.clear();
+            renderHeatmap();
             renderAdvancedHeatmap();
         });
 
@@ -2008,12 +2160,16 @@
 
             exportBtn.disabled = false;
 
-            // Calculate averages for all drivers
-            const driversWithAvgs = practiceData.map((driver, idx) => ({
-                ...driver,
-                originalIndex: idx,
-                averages: calculateAverages(driver)
-            }));
+            // Calculate averages for all drivers (using filtered data)
+            const driversWithAvgs = practiceData.map((driver, idx) => {
+                const effective = getEffectiveLapData(driver);
+                return {
+                    ...driver,
+                    originalIndex: idx,
+                    averages: calculateAverages(driver, effective.lapTimes),
+                    effectiveLapTimes: effective.lapTimes
+                };
+            });
 
             // Calculate ranks for all drivers
             const ranks5 = calculateRanks(driversWithAvgs, 5);
@@ -2090,10 +2246,10 @@
             // Find the maximum lap number across all drivers
             const maxLapNum = Math.max(...practiceData.flatMap(d => d.lapNumbers), 0);
             
-            // Find global min/max lap times for color scale
-            const allTimes = practiceData.flatMap(d => d.lapTimes);
-            const minTime = Math.min(...allTimes);
-            const maxTime = Math.max(...allTimes);
+            // Find global min/max lap times for color scale (using only non-excluded laps)
+            const allTimes = driversWithAvgs.flatMap(d => d.effectiveLapTimes);
+            const minTime = allTimes.length > 0 ? Math.min(...allTimes) : 0;
+            const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : 0;
 
             // Build table HTML with current sort state
             const arrow = (col) => advancedSortColumn === col ? (advancedSortAsc ? '▲' : '▼') : '';
@@ -2173,8 +2329,13 @@
                 for (let i = 1; i <= maxLapNum; i++) {
                     const lapTime = lapMap[i];
                     if (lapTime) {
-                        const bgColor = getLapTimeColor(lapTime, minTime, maxTime);
-                        html += `<td class="lap-cell lap-time-cell" style="background-color: ${bgColor}; color: #000; font-weight: 600;" title="Lap ${i}: ${lapTime.toFixed(3)}s">${lapTime.toFixed(2)}</td>`;
+                        const isExcluded = manualExclusions.has(`${driver.number}_${i}`);
+                        if (isExcluded) {
+                            html += `<td class="lap-cell lap-time-cell excluded-cell" data-driver="${driver.number}" data-lap="${i}" title="Lap ${i}: ${lapTime.toFixed(3)}s (excluded)">${lapTime.toFixed(2)}</td>`;
+                        } else {
+                            const bgColor = getLapTimeColor(lapTime, minTime, maxTime);
+                            html += `<td class="lap-cell lap-time-cell" data-driver="${driver.number}" data-lap="${i}" style="background-color: ${bgColor}; color: #000; font-weight: 600;" title="Lap ${i}: ${lapTime.toFixed(3)}s">${lapTime.toFixed(2)}</td>`;
+                        }
                     } else {
                         html += '<td class="lap-cell"></td>';
                     }
@@ -2184,6 +2345,7 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+            updateExclusionControls();
         }
 
         // Export to Excel functionality
