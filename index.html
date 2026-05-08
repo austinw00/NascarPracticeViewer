@@ -411,6 +411,19 @@
             flex-shrink: 0;
         }
 
+        .compare-reset-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            min-height: 28px;
+        }
+
+        .compare-excluded-count {
+            font-size: 0.78rem;
+            color: #888;
+        }
+
         .averages-table-container {
             max-height: 600px;
             overflow-y: auto;
@@ -845,6 +858,10 @@
                             <tbody id="compareStatsBody"></tbody>
                         </table>
                     </div>
+                    <div class="compare-reset-bar" id="compareResetBar" style="display: none;">
+                        <button class="clear-btn" id="compareResetBtn" onclick="resetCompareExclusions()">Restore All Laps</button>
+                        <span class="compare-excluded-count" id="compareExcludedCount"></span>
+                    </div>
                     <div class="compare-instruction" id="compareInstruction">
                         Select drivers from the list to compare their lap times
                     </div>
@@ -1223,6 +1240,7 @@
             renderHeatmap();
             renderAdvancedHeatmap();
             selectedCompareDrivers = []; // Reset compare selection on new data
+            compareExcludedLaps = {}; // Reset compare exclusions on new data
             updateCompareView();
         }
 
@@ -1509,6 +1527,9 @@
         const compareColors = ['#39ff14', '#ff6b6b', '#4ecdc4', '#ffe66d', '#a855f7'];
         let selectedCompareDrivers = [];
         let compareChart = null;
+        // Per-driver excluded lap indices for the comparison view.
+        // Key: driverIndex (number), Value: Set of lap numbers (from driver.lapNumbers)
+        let compareExcludedLaps = {};
 
         function renderCompareDriversTable() {
             const tableBody = document.getElementById('compareDriversTableBody');
@@ -1544,8 +1565,10 @@
             const idx = selectedCompareDrivers.indexOf(driverIndex);
             if (idx > -1) {
                 selectedCompareDrivers.splice(idx, 1);
+                delete compareExcludedLaps[driverIndex];
             } else if (selectedCompareDrivers.length < 5) {
                 selectedCompareDrivers.push(driverIndex);
+                compareExcludedLaps[driverIndex] = new Set();
             }
             updateCompareView();
         }
@@ -1575,9 +1598,49 @@
             }).join('');
         }
 
+        // Helper: get comparison-filtered lap data for a driver (excludes compareExcludedLaps)
+        function getCompareLapData(driverIdx) {
+            const driver = practiceData[driverIdx];
+            const excluded = compareExcludedLaps[driverIdx] || new Set();
+            const lapTimes = [];
+            const lapNumbers = [];
+            for (let i = 0; i < driver.lapNumbers.length; i++) {
+                if (!excluded.has(driver.lapNumbers[i])) {
+                    lapTimes.push(driver.lapTimes[i]);
+                    lapNumbers.push(driver.lapNumbers[i]);
+                }
+            }
+            return { lapTimes, lapNumbers };
+        }
+
+        // Update the reset bar visibility and count label
+        function updateCompareResetBar() {
+            const resetBar = document.getElementById('compareResetBar');
+            const countEl = document.getElementById('compareExcludedCount');
+            let total = 0;
+            for (const driverIdx of selectedCompareDrivers) {
+                total += (compareExcludedLaps[driverIdx] || new Set()).size;
+            }
+            if (total > 0 && selectedCompareDrivers.length > 0) {
+                resetBar.style.display = 'flex';
+                countEl.textContent = `${total} lap${total > 1 ? 's' : ''} removed`;
+            } else {
+                resetBar.style.display = 'none';
+            }
+        }
+
+        function resetCompareExclusions() {
+            for (const driverIdx of selectedCompareDrivers) {
+                compareExcludedLaps[driverIdx] = new Set();
+            }
+            updateCompareView();
+        }
+
         function renderCompareChart() {
             const chartContainer = document.getElementById('compareChartContainer');
             const instruction = document.getElementById('compareInstruction');
+
+            updateCompareResetBar();
 
             if (selectedCompareDrivers.length === 0) {
                 chartContainer.style.display = 'none';
@@ -1598,8 +1661,8 @@
                 compareChart.destroy();
             }
 
-            // Find max lap number across selected drivers
-            const maxLapNum = Math.max(...selectedCompareDrivers.map(idx => 
+            // Find max lap number across selected drivers (using original, unfiltered data for axis)
+            const maxLapNum = Math.max(...selectedCompareDrivers.map(idx =>
                 Math.max(...practiceData[idx].lapNumbers, 0)
             ));
 
@@ -1608,12 +1671,17 @@
             const datasets = selectedCompareDrivers.map((driverIdx, i) => {
                 const driver = practiceData[driverIdx];
                 const color = compareColors[i];
-                
-                // Create data array with nulls for missing laps
+                const excluded = compareExcludedLaps[driverIdx] || new Set();
+
+                // Create data array with nulls for missing/excluded laps
                 const data = [];
                 for (let lap = 1; lap <= maxLapNum; lap++) {
                     const lapIndex = driver.lapNumbers.indexOf(lap);
-                    data.push(lapIndex > -1 ? driver.lapTimes[lapIndex] : null);
+                    if (lapIndex > -1 && !excluded.has(lap)) {
+                        data.push(driver.lapTimes[lapIndex]);
+                    } else {
+                        data.push(null);
+                    }
                 }
 
                 return {
@@ -1625,8 +1693,10 @@
                     fill: false,
                     tension: 0.3,
                     pointBackgroundColor: color,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2,
                     spanGaps: true
                 };
             });
@@ -1637,6 +1707,27 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick(event, elements) {
+                        // Only act on direct dot clicks
+                        if (!elements || elements.length === 0) return;
+                        const el = elements[0];
+                        const driverIdx = selectedCompareDrivers[el.datasetIndex];
+                        if (driverIdx === undefined) return;
+                        // Parse lap number from the label ("Lap N" -> N)
+                        const label = compareChart.data.labels[el.index] || '';
+                        const lapNum = parseInt(label.replace('Lap ', ''), 10);
+                        if (isNaN(lapNum)) return;
+                        // Ensure the set exists
+                        if (!compareExcludedLaps[driverIdx]) {
+                            compareExcludedLaps[driverIdx] = new Set();
+                        }
+                        compareExcludedLaps[driverIdx].add(lapNum);
+                        updateCompareView();
+                    },
+                    onHover(event, elements) {
+                        event.native.target.style.cursor =
+                            elements && elements.length > 0 ? 'pointer' : 'default';
+                    },
                     plugins: {
                         legend: {
                             display: true,
@@ -1655,8 +1746,11 @@
                             borderWidth: 1,
                             cornerRadius: 6,
                             padding: 12,
-                            mode: 'index',
-                            intersect: false
+                            mode: 'nearest',
+                            intersect: true,
+                            callbacks: {
+                                footer: () => 'Click to remove outlier'
+                            }
                         }
                     },
                     scales: {
@@ -1673,8 +1767,8 @@
                         }
                     },
                     interaction: {
-                        intersect: false,
-                        mode: 'index'
+                        intersect: true,
+                        mode: 'nearest'
                     }
                 }
             });
@@ -1691,26 +1785,30 @@
 
             statsContainer.style.display = 'block';
 
-            // Calculate stats for each driver
+            // Calculate stats for each driver using filtered laps
             const driverStats = selectedCompareDrivers.map((driverIdx, i) => {
                 const driver = practiceData[driverIdx];
-                const avgs = calculateAverages(driver);
-                const lapTimes = driver.lapTimes;
-                
-                // Calculate consistency (standard deviation)
-                const mean = lapTimes.reduce((a, b) => a + b, 0) / lapTimes.length;
-                const variance = lapTimes.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / lapTimes.length;
+                const { lapTimes } = getCompareLapData(driverIdx);
+                const avgs = calculateAverages(driver, lapTimes);
+
+                // Calculate consistency (standard deviation) on filtered laps
+                const mean = lapTimes.length > 0 ? lapTimes.reduce((a, b) => a + b, 0) / lapTimes.length : 0;
+                const variance = lapTimes.length > 0
+                    ? lapTimes.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / lapTimes.length
+                    : 0;
                 const stdDev = Math.sqrt(variance);
+                const bestLap = lapTimes.length > 0 ? Math.min(...lapTimes) : 999;
+                const avgLap = lapTimes.length > 0 ? mean : 999;
 
                 return {
                     index: driverIdx,
                     color: compareColors[i],
                     driver,
-                    bestLap: parseFloat(driver.bestLap) || 999,
-                    avgLap: parseFloat(driver.avgLap) || 999,
+                    bestLap,
+                    avgLap,
                     avg5: avgs.avg5 || 999,
                     avg10: avgs.avg10 || 999,
-                    totalLaps: driver.totalLaps,
+                    totalLaps: lapTimes.length,
                     consistency: stdDev
                 };
             });
@@ -1731,8 +1829,8 @@
                             #${stat.driver.number} ${stat.driver.name}
                         </div>
                     </td>
-                    <td class="${stat.bestLap === bestBestLap ? 'best-in-column' : ''}">${stat.bestLap.toFixed(3)}</td>
-                    <td class="${stat.avgLap === bestAvgLap ? 'best-in-column' : ''}">${stat.avgLap.toFixed(3)}</td>
+                    <td class="${stat.bestLap === bestBestLap ? 'best-in-column' : ''}">${stat.bestLap < 999 ? stat.bestLap.toFixed(3) : '--'}</td>
+                    <td class="${stat.avgLap === bestAvgLap ? 'best-in-column' : ''}">${stat.avgLap < 999 ? stat.avgLap.toFixed(3) : '--'}</td>
                     <td class="${stat.avg5 === bestAvg5 ? 'best-in-column' : ''}">${stat.avg5 < 999 ? stat.avg5.toFixed(3) : '--'}</td>
                     <td class="${stat.avg10 === bestAvg10 ? 'best-in-column' : ''}">${stat.avg10 < 999 ? stat.avg10.toFixed(3) : '--'}</td>
                     <td class="${stat.totalLaps === bestLaps ? 'best-in-column' : ''}">${stat.totalLaps}</td>
